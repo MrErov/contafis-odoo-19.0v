@@ -1,0 +1,81 @@
+<odoo>
+    <record id="view_l10n_ve_obligation_type_list" model="ir.ui.view">
+        <field name="name">l10n.ve.obligation.type.list</field>
+        <field name="model">l10n.ve.obligation.type</field>
+        <field name="arch" type="xml">
+            <list string="Tipos de Obligación">
+                <field name="name"/>
+                <field name="institution_id"/>
+                <field name="category"/>
+                <field name="tax_type"/>
+                <field name="periodicity"/>
+                <field name="due_day_rule"/>
+                <field name="due_day_value" optional="hide"/>
+                <field name="base_calculation" optional="hide"/>
+                <field name="rate" optional="show"/>
+                <field name="currency_id" optional="hide"/>
+                <field name="alert_enabled" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_l10n_ve_obligation_type_form" model="ir.ui.view">
+        <field name="name">l10n.ve.obligation.type.form</field>
+        <field name="model">l10n.ve.obligation.type</field>
+        <field name="arch" type="xml">
+            <form string="Tipo de Obligación">
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="Nombre del tipo de obligación"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="institution_id"/>
+                            <field name="category"/>
+                            <field name="tax_type"/>
+                            <field name="periodicity"/>
+                        </group>
+                        <group>
+                            <field name="due_day_rule"/>
+                            <field name="due_day_value"/>
+                            <field name="base_calculation"/>
+                            <field name="rate"/>
+                            <field name="currency_id"/>
+                        </group>
+                    </group>
+                    <group string="Alertas">
+                        <group>
+                            <field name="alert_days_before"/>
+                            <field name="alert_channel"/>
+                        </group>
+                        <group>
+                            <field name="alert_enabled"/>
+                            <field name="alert_on_overdue"/>
+                            <field name="alert_on_missing_payment"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_l10n_ve_obligation_type_search" model="ir.ui.view">
+        <field name="name">l10n.ve.obligation.type.search</field>
+        <field name="model">l10n.ve.obligation.type</field>
+        <field name="arch" type="xml">
+            <search string="Tipos de Obligación">
+                <field name="name"/>
+                <field name="institution_id"/>
+                <field name="category"/>
+                <field name="tax_type"/>
+                <field name="periodicity"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_l10n_ve_obligation_type" model="ir.actions.act_window">
+        <field name="name">Tipos de Obligación</field>
+        <field name="res_model">l10n.ve.obligation.type</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

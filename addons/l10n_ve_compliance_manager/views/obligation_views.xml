@@ -1,0 +1,161 @@
+<odoo>
+    <record id="view_l10n_ve_obligation_list" model="ir.ui.view">
+        <field name="name">l10n.ve.obligation.list</field>
+        <field name="model">l10n.ve.obligation</field>
+        <field name="arch" type="xml">
+            <list string="Obligaciones" multi_edit="1">
+                <field name="name"/>
+                <field name="client_id"/>
+                <field name="obligation_type_id"/>
+                <field name="period"/>
+                <field name="due_date"/>
+                <field name="amount"/>
+                <field name="currency_id" optional="hide"/>
+                <field name="payment_date" optional="show"/>
+                <field name="responsible_id" optional="hide"/>
+                <field name="state"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_l10n_ve_obligation_form" model="ir.ui.view">
+        <field name="name">l10n.ve.obligation.form</field>
+        <field name="model">l10n.ve.obligation</field>
+        <field name="arch" type="xml">
+            <form string="Obligación">
+                <header>
+                    <field name="state" widget="statusbar" statusbar_visible="pending,paid,overdue,cancelled"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="OBL-YYYY-NNNN"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="client_id"/>
+                            <field name="obligation_type_id"/>
+                            <field name="period"/>
+                            <field name="due_date"/>
+                            <field name="due_date_override"/>
+                            <field name="responsible_id"/>
+                        </group>
+                        <group>
+                            <field name="amount"/>
+                            <field name="currency_id"/>
+                            <field name="retention_id"/>
+                            <field name="move_id"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Pago" name="payment" invisible="state != 'paid'">
+                            <group>
+                                <group>
+                                    <field name="payment_date"/>
+                                    <field name="payment_reference"/>
+                                </group>
+                                <group>
+                                    <field name="payment_attachment" widget="binary"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Documentos" name="documents">
+                            <field name="document_ids">
+                                <list string="Documentos">
+                                    <field name="document_type_id"/>
+                                    <field name="number"/>
+                                    <field name="issue_date"/>
+                                    <field name="expiry_date"/>
+                                    <field name="state"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Alertas" name="alerts">
+                            <field name="alert_ids">
+                                <list string="Alertas">
+                                    <field name="name"/>
+                                    <field name="alert_type"/>
+                                    <field name="date"/>
+                                    <field name="state"/>
+                                    <field name="channel"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Notas" name="notes">
+                            <field name="notes" nolabel="1" placeholder="Notas de la obligación..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_l10n_ve_obligation_search" model="ir.ui.view">
+        <field name="name">l10n.ve.obligation.search</field>
+        <field name="model">l10n.ve.obligation</field>
+        <field name="arch" type="xml">
+            <search string="Obligaciones">
+                <field name="name"/>
+                <field name="client_id"/>
+                <field name="obligation_type_id"/>
+                <field name="period"/>
+                <field name="due_date"/>
+                <field name="state"/>
+                <filter string="Pendientes" name="filter_pending" domain="[('state', '=', 'pending')]"/>
+                <filter string="Vencidas" name="filter_overdue" domain="[('state', '=', 'overdue')]"/>
+                <filter string="Pagadas" name="filter_paid" domain="[('state', '=', 'paid')]"/>
+                <separator/>
+                <filter string="Agrupar por período" name="groupby_period" context="{'group_by': 'period'}"/>
+                <filter string="Agrupar por cliente" name="groupby_client" context="{'group_by': 'client_id'}"/>
+                <filter string="Agrupar por tipo" name="groupby_type" context="{'group_by': 'obligation_type_id'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_l10n_ve_obligation_kanban" model="ir.ui.view">
+        <field name="name">l10n.ve.obligation.kanban</field>
+        <field name="model">l10n.ve.obligation</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="state" class="o_kanban_mobile">
+                <field name="name"/>
+                <field name="client_id"/>
+                <field name="period"/>
+                <field name="due_date"/>
+                <field name="amount"/>
+                <field name="state"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div t-attf-class="oe_kanban_global_click">
+                            <div class="o_kanban_record_top">
+                                <div class="oe_kanban_heading">
+                                    <strong><field name="name"/></strong>
+                                    <div class="text-muted"><field name="client_id"/></div>
+                                </div>
+                                <span class="o_kanban_record_bottom_right"><field name="amount"/></span>
+                            </div>
+                            <div class="oe_kanban_bottom_left">
+                                <span>
+                                    Período: <field name="period"/> · Vence: <field name="due_date"/>
+                                </span>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="action_l10n_ve_obligation" model="ir.actions.act_window">
+        <field name="name">Obligaciones</field>
+        <field name="res_model">l10n.ve.obligation</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Registre la primera obligación
+            </p>
+            <p>
+                Gestione los vencimientos fiscales, parafiscales y
+                municipales de cada cliente.
+            </p>
+        </field>
+    </record>
+</odoo>

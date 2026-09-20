@@ -1,0 +1,46 @@
+<odoo>
+    <menuitem id="menu_l10n_ve_compliance_root"
+              name="Cumplimiento VE"
+              sequence="10"/>
+
+    <menuitem id="menu_l10n_ve_compliance_clients"
+              name="Clientes"
+              parent="menu_l10n_ve_compliance_root"
+              action="action_l10n_ve_compliance_client"
+              sequence="10"/>
+
+    <menuitem id="menu_l10n_ve_compliance_obligations"
+              name="Obligaciones"
+              parent="menu_l10n_ve_compliance_root"
+              action="action_l10n_ve_obligation"
+              sequence="20"/>
+
+    <menuitem id="menu_l10n_ve_compliance_documents"
+              name="Documentos"
+              parent="menu_l10n_ve_compliance_root"
+              action="action_l10n_ve_document"
+              sequence="30"/>
+
+    <menuitem id="menu_l10n_ve_compliance_alerts"
+              name="Alertas"
+              parent="menu_l10n_ve_compliance_root"
+              action="action_l10n_ve_alert"
+              sequence="40"/>
+
+    <menuitem id="menu_l10n_ve_compliance_config"
+              name="Configuración"
+              parent="menu_l10n_ve_compliance_root"
+              sequence="50"/>
+
+    <menuitem id="menu_l10n_ve_compliance_institutions"
+              name="Instituciones"
+              parent="menu_l10n_ve_compliance_config"
+              action="action_l10n_ve_institution"
+              sequence="10"/>
+
+    <menuitem id="menu_l10n_ve_compliance_obligation_types"
+              name="Tipos de Obligación"
+              parent="menu_l10n_ve_compliance_config"
+              action="action_l10n_ve_obligation_type"
+              sequence="20"/>
+</odoo>

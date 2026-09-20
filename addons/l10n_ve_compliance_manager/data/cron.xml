@@ -1,0 +1,13 @@
+<odoo>
+    <data>
+        <record id="cron_l10n_ve_compliance_alerts" model="ir.cron">
+            <field name="name">Cumplimiento VE: Generar alertas de cumplimiento</field>
+            <field name="model_id" ref="model_l10n_ve_obligation"/>
+            <field name="state">code</field>
+            <field name="code">model._cron_generate_compliance_alerts()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="active">True</field>
+        </record>
+    </data>
+</odoo>

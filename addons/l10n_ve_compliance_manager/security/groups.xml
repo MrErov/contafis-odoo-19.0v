@@ -1,0 +1,8 @@
+<odoo>
+    <data>
+        <record id="l10n_ve_compliance_accountant" model="res.groups">
+            <field name="name">Contador de Cumplimiento VE</field>
+            <field name="comment">Gestión completa del módulo de cumplimiento fiscal, parafiscal y documental.</field>
+        </record>
+    </data>
+</odoo>

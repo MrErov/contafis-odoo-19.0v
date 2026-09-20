@@ -1,0 +1,47 @@
+# === Python / Odoo ===
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.log
+
+# === Odoo data ===
+filestore/
+sessions/
+*.pid
+
+# === Config con secretos (admin_passwd / db_password) ===
+odoo.conf
+config/odoo.conf
+config/*.local.conf
+.env
+.env.*
+
+# === Datos sensibles ===
+*.sql
+*.dump
+*.sql.gz
+*.tar.gz
+
+# === Sistema operativo ===
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# === IDE ===
+.vscode/
+.idea/
+.vs/
+*.swp
+*.swo
+
+# === Documentación interna no versionada ===
+docs/
+
+# === opencode ===
+.opencode/
+
+# === Docker ===
+*.pid

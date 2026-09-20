@@ -1,0 +1,244 @@
+<odoo>
+    <data>
+
+        <record id="institution_demo_seniat" model="l10n.ve.institution">
+            <field name="name">SENIAT</field>
+            <field name="type">seniat</field>
+            <field name="rif">J-00002955-5</field>
+            <field name="portal_url">https://www.seniat.gob.ve</field>
+            <field name="contact_info">Servicio Nacional Integrado de Administración Aduanera y Tributaria</field>
+        </record>
+
+        <record id="institution_demo_ivss" model="l10n.ve.institution">
+            <field name="name">IVSS</field>
+            <field name="type">ivss</field>
+            <field name="rif">J-00008705-7</field>
+            <field name="portal_url">https://www.ivss.gob.ve</field>
+            <field name="contact_info">Instituto Venezolano de los Seguros Sociales</field>
+        </record>
+
+        <record id="institution_demo_inces" model="l10n.ve.institution">
+            <field name="name">INCES</field>
+            <field name="type">inces</field>
+            <field name="rif">J-00011001-0</field>
+            <field name="portal_url">https://www.inces.gob.ve</field>
+            <field name="contact_info">Instituto Nacional de Capacitación y Educación Socialista</field>
+        </record>
+
+        <record id="institution_demo_banavih" model="l10n.ve.institution">
+            <field name="name">BANAVIH</field>
+            <field name="type">banavih</field>
+            <field name="rif">J-00083297-0</field>
+            <field name="portal_url">https://www.banavih.gob.ve</field>
+            <field name="contact_info">Banco Nacional de Vivienda y Hábitat</field>
+        </record>
+
+        <record id="institution_demo_municipality" model="l10n.ve.institution">
+            <field name="name">Alcaldía</field>
+            <field name="type">municipal</field>
+            <field name="rif">J-00000000-1</field>
+            <field name="portal_url"></field>
+            <field name="contact_info">Alcaldía correspondiente al municipio del cliente</field>
+        </record>
+
+        <record id="obligation_type_demo_iva" model="l10n.ve.obligation.type">
+            <field name="name">IVA Mensual</field>
+            <field name="institution_id" ref="institution_demo_seniat"/>
+            <field name="category">fiscal_nacional</field>
+            <field name="tax_type">iva</field>
+            <field name="periodicity">monthly</field>
+            <field name="due_day_rule">1-15</field>
+            <field name="base_calculation">invoice</field>
+            <field name="rate">16.0</field>
+            <field name="currency_id" ref="base.USD"/>
+            <field name="alert_days_before">5</field>
+            <field name="alert_channel">email</field>
+            <field name="alert_enabled">True</field>
+            <field name="alert_on_overdue">True</field>
+            <field name="alert_on_missing_payment">True</field>
+        </record>
+
+        <record id="obligation_type_demo_islr" model="l10n.ve.obligation.type">
+            <field name="name">ISLR</field>
+            <field name="institution_id" ref="institution_demo_seniat"/>
+            <field name="category">fiscal_nacional</field>
+            <field name="tax_type">islr</field>
+            <field name="periodicity">anual</field>
+            <field name="due_day_rule">1-15</field>
+            <field name="base_calculation">invoice</field>
+            <field name="rate">0.0</field>
+            <field name="currency_id" ref="base.USD"/>
+            <field name="alert_days_before">5</field>
+            <field name="alert_channel">email</field>
+            <field name="alert_enabled">True</field>
+            <field name="alert_on_overdue">True</field>
+            <field name="alert_on_missing_payment">True</field>
+        </record>
+
+        <record id="obligation_type_demo_igtf" model="l10n.ve.obligation.type">
+            <field name="name">IGTF</field>
+            <field name="institution_id" ref="institution_demo_seniat"/>
+            <field name="category">fiscal_nacional</field>
+            <field name="tax_type">igtf</field>
+            <field name="periodicity">monthly</field>
+            <field name="due_day_rule">1-15</field>
+            <field name="base_calculation">purchase</field>
+            <field name="rate">3.0</field>
+            <field name="currency_id" ref="base.USD"/>
+            <field name="alert_days_before">5</field>
+            <field name="alert_channel">email</field>
+            <field name="alert_enabled">True</field>
+            <field name="alert_on_overdue">True</field>
+            <field name="alert_on_missing_payment">True</field>
+        </record>
+
+        <record id="obligation_type_demo_retention_iva" model="l10n.ve.obligation.type">
+            <field name="name">Retención de IVA</field>
+            <field name="institution_id" ref="institution_demo_seniat"/>
+            <field name="category">fiscal_nacional</field>
+            <field name="tax_type">iva</field>
+            <field name="periodicity">monthly</field>
+            <field name="due_day_rule">1-15</field>
+            <field name="base_calculation">purchase</field>
+            <field name="rate">75.0</field>
+            <field name="currency_id" ref="base.USD"/>
+            <field name="alert_days_before">5</field>
+            <field name="alert_channel">email</field>
+            <field name="alert_enabled">True</field>
+            <field name="alert_on_overdue">True</field>
+            <field name="alert_on_missing_payment">True</field>
+        </record>
+
+        <record id="obligation_type_demo_retention_islr" model="l10n.ve.obligation.type">
+            <field name="name">Retención de ISLR</field>
+            <field name="institution_id" ref="institution_demo_seniat"/>
+            <field name="category">fiscal_nacional</field>
+            <field name="tax_type">islr</field>
+            <field name="periodicity">monthly</field>
+            <field name="due_day_rule">1-15</field>
+            <field name="base_calculation">purchase</field>
+            <field name="rate">3.0</field>
+            <field name="currency_id" ref="base.USD"/>
+            <field name="alert_days_before">5</field>
+            <field name="alert_channel">email</field>
+            <field name="alert_enabled">True</field>
+            <field name="alert_on_overdue">True</field>
+            <field name="alert_on_missing_payment">True</field>
+        </record>
+
+        <record id="obligation_type_demo_ivss" model="l10n.ve.obligation.type">
+            <field name="name">IVSS Patronal</field>
+            <field name="institution_id" ref="institution_demo_ivss"/>
+            <field name="category">parafiscal</field>
+            <field name="tax_type">ivss</field>
+            <field name="periodicity">monthly</field>
+            <field name="due_day_rule">primeros_5_dias_habiles</field>
+            <field name="base_calculation">payroll</field>
+            <field name="rate">0.0</field>
+            <field name="currency_id" ref="base.USD"/>
+            <field name="alert_days_before">5</field>
+            <field name="alert_channel">email</field>
+            <field name="alert_enabled">True</field>
+            <field name="alert_on_overdue">True</field>
+            <field name="alert_on_missing_payment">True</field>
+        </record>
+
+        <record id="obligation_type_demo_inces" model="l10n.ve.obligation.type">
+            <field name="name">INCES</field>
+            <field name="institution_id" ref="institution_demo_inces"/>
+            <field name="category">parafiscal</field>
+            <field name="tax_type">inces</field>
+            <field name="periodicity">trimestral</field>
+            <field name="due_day_rule">primeros_5_dias_habiles</field>
+            <field name="base_calculation">payroll</field>
+            <field name="rate">2.0</field>
+            <field name="currency_id" ref="base.USD"/>
+            <field name="alert_days_before">5</field>
+            <field name="alert_channel">email</field>
+            <field name="alert_enabled">True</field>
+            <field name="alert_on_overdue">True</field>
+            <field name="alert_on_missing_payment">True</field>
+        </record>
+
+        <record id="obligation_type_demo_banavih" model="l10n.ve.obligation.type">
+            <field name="name">BANAVIH (FAOV)</field>
+            <field name="institution_id" ref="institution_demo_banavih"/>
+            <field name="category">parafiscal</field>
+            <field name="tax_type">banavih</field>
+            <field name="periodicity">monthly</field>
+            <field name="due_day_rule">primeros_5_dias_habiles</field>
+            <field name="base_calculation">payroll</field>
+            <field name="rate">2.0</field>
+            <field name="currency_id" ref="base.USD"/>
+            <field name="alert_days_before">5</field>
+            <field name="alert_channel">email</field>
+            <field name="alert_enabled">True</field>
+            <field name="alert_on_overdue">True</field>
+            <field name="alert_on_missing_payment">True</field>
+        </record>
+
+        <record id="obligation_type_demo_iae" model="l10n.ve.obligation.type">
+            <field name="name">Impuesto de Actividades Económicas (IAE)</field>
+            <field name="institution_id" ref="institution_demo_municipality"/>
+            <field name="category">municipal</field>
+            <field name="tax_type">municipal</field>
+            <field name="periodicity">monthly</field>
+            <field name="due_day_rule">dia_fijo</field>
+            <field name="due_day_value">10</field>
+            <field name="base_calculation">gross_income</field>
+            <field name="rate">0.0</field>
+            <field name="currency_id" ref="base.USD"/>
+            <field name="alert_days_before">5</field>
+            <field name="alert_channel">email</field>
+            <field name="alert_enabled">True</field>
+            <field name="alert_on_overdue">True</field>
+            <field name="alert_on_missing_payment">True</field>
+        </record>
+
+        <record id="document_type_demo_rif" model="l10n.ve.document.type">
+            <field name="name">RIF</field>
+            <field name="institution_id" ref="institution_demo_seniat"/>
+            <field name="validity_days">0</field>
+            <field name="renewal_alert_days">30</field>
+            <field name="required_for">company</field>
+            <field name="alert_channel">email</field>
+        </record>
+
+        <record id="document_type_demo_licencia_economicas" model="l10n.ve.document.type">
+            <field name="name">Licencia de Actividades Económicas</field>
+            <field name="institution_id" ref="institution_demo_municipality"/>
+            <field name="validity_days">365</field>
+            <field name="renewal_alert_days">30</field>
+            <field name="required_for">company</field>
+            <field name="alert_channel">email</field>
+        </record>
+
+        <record id="document_type_demo_solvencia_laboral" model="l10n.ve.document.type">
+            <field name="name">Solvencia Laboral</field>
+            <field name="institution_id" ref="institution_demo_ivss"/>
+            <field name="validity_days">90</field>
+            <field name="renewal_alert_days">15</field>
+            <field name="required_for">company</field>
+            <field name="alert_channel">email</field>
+        </record>
+
+        <record id="document_type_demo_certificado_inces" model="l10n.ve.document.type">
+            <field name="name">Certificado INCES</field>
+            <field name="institution_id" ref="institution_demo_inces"/>
+            <field name="validity_days">365</field>
+            <field name="renewal_alert_days">30</field>
+            <field name="required_for">company</field>
+            <field name="alert_channel">email</field>
+        </record>
+
+        <record id="document_type_demo_permiso_bomberos" model="l10n.ve.document.type">
+            <field name="name">Permiso de Bomberos</field>
+            <field name="institution_id" ref="institution_demo_municipality"/>
+            <field name="validity_days">365</field>
+            <field name="renewal_alert_days">30</field>
+            <field name="required_for">company</field>
+            <field name="alert_channel">email</field>
+        </record>
+
+    </data>
+</odoo>

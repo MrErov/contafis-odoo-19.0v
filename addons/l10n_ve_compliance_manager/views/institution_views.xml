@@ -1,0 +1,56 @@
+<odoo>
+    <record id="view_l10n_ve_institution_list" model="ir.ui.view">
+        <field name="name">l10n.ve.institution.list</field>
+        <field name="model">l10n.ve.institution</field>
+        <field name="arch" type="xml">
+            <list string="Instituciones">
+                <field name="name"/>
+                <field name="type"/>
+                <field name="rif"/>
+                <field name="portal_url"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_l10n_ve_institution_form" model="ir.ui.view">
+        <field name="name">l10n.ve.institution.form</field>
+        <field name="model">l10n.ve.institution</field>
+        <field name="arch" type="xml">
+            <form string="Institución">
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="Nombre de la institución"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="type"/>
+                            <field name="rif"/>
+                        </group>
+                        <group>
+                            <field name="portal_url"/>
+                            <field name="contact_info" nolabel="1" colspan="2"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_l10n_ve_institution_search" model="ir.ui.view">
+        <field name="name">l10n.ve.institution.search</field>
+        <field name="model">l10n.ve.institution</field>
+        <field name="arch" type="xml">
+            <search string="Instituciones">
+                <field name="name"/>
+                <field name="type"/>
+                <field name="rif"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_l10n_ve_institution" model="ir.actions.act_window">
+        <field name="name">Instituciones</field>
+        <field name="res_model">l10n.ve.institution</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

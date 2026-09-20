@@ -1,0 +1,119 @@
+<odoo>
+    <record id="action_report_l10n_ve_compliance_client" model="ir.actions.report">
+        <field name="name">Estado de Cumplimiento por Cliente</field>
+        <field name="model">l10n.ve.compliance.client</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">l10n_ve_compliance_manager.report_compliance_client</field>
+        <field name="report_file">l10n_ve_compliance_manager.report_compliance_client</field>
+        <field name="binding_model_id" ref="l10n_ve_compliance_manager.model_l10n_ve_compliance_client"/>
+        <field name="print_report_name">'Estado de Cumplimiento por Cliente - %s' % (object.name)</field>
+    </record>
+
+    <template id="report_compliance_client">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-set="state_obligation_labels" t-value="{
+                    'pending': 'Pendiente',
+                    'paid': 'Pagada',
+                    'overdue': 'Vencida',
+                    'cancelled': 'Cancelada',
+                }"/>
+                <t t-set="state_document_labels" t-value="{
+                    'valid': 'Válido',
+                    'expired': 'Expirado',
+                    'pending': 'Pendiente',
+                    'rejected': 'Rechazado',
+                }"/>
+                <div class="page">
+                    <style>
+                        table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+                        table th, table td { border: 1px solid #ddd; padding: 4px 6px; }
+                        table th { background-color: #f2f2f2; }
+                        h3 { margin-bottom: 4px; }
+                    </style>
+                    <h1>Estado de Cumplimiento por Cliente</h1>
+                    <h3><span t-esc="doc.name"/></h3>
+                    <table>
+                        <tr>
+                            <td><b>RIF:</b></td>
+                            <td t-esc="doc.rif"/>
+                            <td><b>Fecha del reporte:</b></td>
+                            <td t-esc="time.strftime('%d/%m/%Y')"/>
+                        </tr>
+                        <tr>
+                            <td><b>Contacto:</b></td>
+                            <td t-esc="doc.partner_id.name"/>
+                            <td><b>Municipio:</b></td>
+                            <td t-esc="doc.municipality"/>
+                        </tr>
+                        <tr>
+                            <td><b>Estado de cumplimiento:</b></td>
+                            <td t-esc="doc.compliance_status"/>
+                            <td><b>Puntuación:</b></td>
+                            <td t-esc="doc.compliance_score"/>
+                        </tr>
+                    </table>
+
+                    <h3>Obligaciones</h3>
+                    <table>
+                        <tr>
+                            <th>Período</th>
+                            <th>Tipo</th>
+                            <th>Vencimiento</th>
+                            <th>Estado</th>
+                            <th>Monto</th>
+                        </tr>
+                        <t t-foreach="doc.obligation_ids" t-as="obligation">
+                            <tr>
+                                <td t-esc="obligation.period"/>
+                                <td t-esc="obligation.obligation_type_id.name"/>
+                                <td t-esc="format_date(obligation.due_date)"/>
+                                <td t-esc="state_obligation_labels.get(obligation.state, obligation.state)"/>
+                                <td>
+                                    <span t-esc="obligation.amount"/>
+                                    <span t-esc="obligation.currency_id.name"/>
+                                </td>
+                            </tr>
+                        </t>
+                    </table>
+
+                    <h3>Documentos</h3>
+                    <table>
+                        <tr>
+                            <th>Tipo</th>
+                            <th>Número</th>
+                            <th>Vencimiento</th>
+                            <th>Estado</th>
+                        </tr>
+                        <t t-foreach="doc.document_ids" t-as="document">
+                            <tr>
+                                <td t-esc="document.document_type_id.name"/>
+                                <td t-esc="document.number"/>
+                                <td t-esc="format_date(document.expiry_date)"/>
+                                <td t-esc="state_document_labels.get(document.state, document.state)"/>
+                            </tr>
+                        </t>
+                    </table>
+
+                    <h3>Historial de Alertas Enviadas</h3>
+                    <table>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Tipo</th>
+                            <th>Canal</th>
+                        </tr>
+                        <t t-foreach="doc.alert_ids" t-as="alert">
+                            <t t-if="alert.state == 'sent'">
+                                <tr>
+                                    <td t-esc="format_datetime(alert.date)"/>
+                                    <td t-esc="alert.alert_type"/>
+                                    <td t-esc="alert.channel"/>
+                                </tr>
+                            </t>
+                        </t>
+                    </table>
+                </div>
+            </t>
+        </t>
+    </template>
+</odoo>

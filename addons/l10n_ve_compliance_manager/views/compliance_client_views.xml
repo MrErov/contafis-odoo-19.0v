@@ -1,0 +1,171 @@
+<odoo>
+    <record id="view_l10n_ve_compliance_client_list" model="ir.ui.view">
+        <field name="name">l10n.ve.compliance.client.list</field>
+        <field name="model">l10n.ve.compliance.client</field>
+        <field name="arch" type="xml">
+            <list string="Clientes de Cumplimiento">
+                <field name="name"/>
+                <field name="rif"/>
+                <field name="rif_last_digit"/>
+                <field name="partner_id"/>
+                <field name="company_id"/>
+                <field name="accountant_id" optional="hide"/>
+                <field name="activity_type"/>
+                <field name="municipality" optional="show"/>
+                <field name="compliance_status"/>
+                <field name="compliance_score"/>
+                <field name="last_alert_date" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_l10n_ve_compliance_client_form" model="ir.ui.view">
+        <field name="name">l10n.ve.compliance.client.form</field>
+        <field name="model">l10n.ve.compliance.client</field>
+        <field name="arch" type="xml">
+            <form string="Cliente de Cumplimiento">
+                <header>
+                    <button name="%(action_report_l10n_ve_compliance_client)d"
+                            type="action"
+                            string="Imprimir Reporte"
+                            class="btn-primary"
+                            icon="fa-print"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="Nombre del cliente"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="partner_id"/>
+                            <field name="company_id"/>
+                            <field name="accountant_id"/>
+                            <field name="activity_type"/>
+                        </group>
+                        <group>
+                            <field name="rif"/>
+                            <field name="rif_last_digit" readonly="1"/>
+                            <field name="municipality"/>
+                            <field name="compliance_status" readonly="1"/>
+                            <field name="compliance_score" readonly="1"/>
+                            <field name="last_alert_date" readonly="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Obligaciones" name="obligations">
+                            <field name="obligation_ids">
+                                <list string="Obligaciones">
+                                    <field name="name"/>
+                                    <field name="obligation_type_id"/>
+                                    <field name="period"/>
+                                    <field name="due_date"/>
+                                    <field name="amount" optional="show"/>
+                                    <field name="currency_id" optional="hide"/>
+                                    <field name="state"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Documentos" name="documents">
+                            <field name="document_ids">
+                                <list string="Documentos">
+                                    <field name="document_type_id"/>
+                                    <field name="number"/>
+                                    <field name="issue_date"/>
+                                    <field name="expiry_date"/>
+                                    <field name="state"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Alertas" name="alerts">
+                            <field name="alert_ids">
+                                <list string="Alertas">
+                                    <field name="name"/>
+                                    <field name="alert_type"/>
+                                    <field name="date"/>
+                                    <field name="state"/>
+                                    <field name="channel"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_l10n_ve_compliance_client_search" model="ir.ui.view">
+        <field name="name">l10n.ve.compliance.client.search</field>
+        <field name="model">l10n.ve.compliance.client</field>
+        <field name="arch" type="xml">
+            <search string="Clientes de Cumplimiento">
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="rif"/>
+                <field name="accountant_id"/>
+                <field name="activity_type"/>
+                <field name="municipality"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_l10n_ve_compliance_client_kanban" model="ir.ui.view">
+        <field name="name">l10n.ve.compliance.client.kanban</field>
+        <field name="model">l10n.ve.compliance.client</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="activity_type" class="o_kanban_mobile">
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="rif"/>
+                <field name="compliance_score"/>
+                <field name="compliance_status"/>
+                <field name="alert_ids"/>
+                <field name="pending_alert_count"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div t-attf-class="oe_kanban_global_click">
+                            <div class="o_kanban_record_top">
+                                <div class="oe_kanban_heading">
+                                    <strong><field name="partner_id"/></strong>
+                                    <div class="text-muted"><field name="name"/></div>
+                                </div>
+                                <field name="compliance_status"
+                                       widget="badge"
+                                       decoration-success="compliance_status == 'al_dia'"
+                                       decoration-warning="compliance_status == 'pendiente'"
+                                       decoration-danger="compliance_status == 'vencido'"/>
+                            </div>
+                            <div class="oe_kanban_card_meta">
+                                <span class="o_kanban_record_title">
+                                    Puntuación: <field name="compliance_score"/>
+                                </span>
+                            </div>
+                            <div class="oe_kanban_bottom_right">
+                                <span class="badge text-bg-warning">
+                                    Alertas pendientes: <field name="pending_alert_count"/>
+                                </span>
+                            </div>
+                            <div class="oe_kanban_bottom_left o_kanban_redline">
+                                <field name="rif"/>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="action_l10n_ve_compliance_client" model="ir.actions.act_window">
+        <field name="name">Clientes de Cumplimiento</field>
+        <field name="res_model">l10n.ve.compliance.client</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Cree su primer cliente de cumplimiento
+            </p>
+            <p>
+                Registre las empresas gestionadas por el contador y
+                vincule sus obligaciones fiscales, parafiscales y documentales.
+            </p>
+        </field>
+    </record>
+</odoo>
