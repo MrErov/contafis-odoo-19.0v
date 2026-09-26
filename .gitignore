@@ -38,10 +38,8 @@ desktop.ini
 *.swo
 
 # === Documentación interna no versionada ===
-docs/
+docs/memory.md
 
-# === opencode ===
-.opencode/
 
 # === Docker ===
 *.pid
