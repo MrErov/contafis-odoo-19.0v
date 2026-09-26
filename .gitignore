@@ -36,10 +36,8 @@ desktop.ini
 .vs/
 *.swp
 *.swo
-
 # === Documentación interna no versionada ===
 docs/memory.md
-
 
 # === Docker ===
 *.pid
