@@ -1,0 +1,235 @@
+# l10n_ve_compliance_manager
+
+![Odoo](https://img.shields.io/badge/Odoo-19.0-875A7B?logo=odoo&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14%2B-4169E1?logo=postgresql&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white)
+![License](https://img.shields.io/badge/License-LGPL--3-blue)
+![Odoo 19 LTS](https://img.shields.io/badge/LTS-2028-success)
+
+Módulo **Odoo 19.0** para la gestión integral del cumplimiento fiscal,
+parafiscal y documental de empresas y negocios en **Venezuela**, diseñado
+para contadores y firmas contables que gestionan múltiples clientes.
+
+---
+
+## 🎯 Propósito
+
+Permite a un contador monitorear todas las obligaciones fiscales,
+parafiscales y municipales de sus clientes, alertar automáticamente
+sobre vencimientos y documentos por expirar, y generar reportes de
+cumplimiento listos para presentar al cliente.
+
+El módulo centraliza el seguimiento de:
+
+- **SENIAT:** IVA, ISLR, IGTF, retenciones de IVA e ISLR.
+- **Parafiscales:** IVSS, INCES, BANAVIH, Paro Forzoso.
+- **Municipales:** IAE, licencias de actividades económicas.
+- **Cartelera fiscal documental:** RIF, solvencia laboral, certificado
+  INCES, permiso de bomberos, y más.
+
+---
+
+## ✨ Funcionalidades
+
+- **Multi-cliente:** un contador gestiona N empresas desde una sola
+  instancia de Odoo.
+- **Calendario SENIAT 2026:** cálculo automático de vencimientos según el
+  último dígito del RIF, conforme a la Providencia Administrativa
+  N° SNAT/2025/000091 (Gaceta Oficial N° 43.283).
+- **Reglas parafiscales:** "primeros 5 días hábiles" para IVSS, BANAVIH
+  y Paro Forzoso; periodicidad trimestral para INCES.
+- **Cartelera fiscal:** control de vigencia de documentos obligatorios
+  con alertas de renovación configurables.
+- **Alertas automáticas:** email vía `mail.template` y WhatsApp vía
+  `wa.me` (sin costo de API).
+- **Dashboard del contador:** estado de cumplimiento por cliente con
+  puntuación de 0 a 100.
+- **Retenciones:** vinculadas a facturas de proveedor (`in_invoice`) y
+  publicadas en `account.move`.
+- **Reportes PDF:** estado de cumplimiento exportable por cliente.
+- **Seguridad por grupos:** `account.group_account_user` (lectura),
+  `account.group_account_manager` (CRUD), y grupo propio
+  `l10n_ve_compliance_accountant`.
+
+---
+
+## 📦 Modelos
+
+| Modelo | Descripción |
+|---|---|
+| `l10n.ve.compliance.client` | Cliente del contador (empresa o negocio) |
+| `l10n.ve.institution` | SENIAT, IVSS, INCES, BANAVIH, municipios |
+| `l10n.ve.obligation.type` | Catálogo maestro de obligaciones |
+| `l10n.ve.obligation` | Obligación concreta por cliente y período |
+| `l10n.ve.document.type` | Catálogo de tipos de documento |
+| `l10n.ve.document` | Documento con vigencia, adjunto y estado |
+| `l10n.ve.alert` | Alertas generadas por el cron |
+| `l10n.retention` | Retenciones vinculadas a `account.move` |
+| **Extensiones** | `account.move`, `res.partner` |
+
+---
+
+## 🚀 Instalación
+
+### Requisitos
+
+- Odoo 19.0 Community
+- PostgreSQL 14+
+- Docker + Docker Compose (recomendado)
+
+### Pasos
+
+```bash
+# 1. Clonar el repositorio
+git clone https://github.com/MrErov/contafis-odoo-19.0v.git
+cd contafis-odoo-19.0v
+
+# 2. Copiar la configuración de ejemplo
+cp odoo.conf.example odoo.conf
+# Edita odoo.conf y ajusta admin_passwd y db_password
+
+# 3. Levantar los contenedores
+docker compose up -d
+
+# 4. Instalar el módulo
+docker compose run --rm web odoo -d contea \
+  -i l10n_ve_compliance_manager --stop-after-init --workers 0
+
+# 5. Abrir en el navegador
+# http://localhost:8090
+```
+
+Alternativamente, si usas una instalación local de Odoo, copia la carpeta
+`addons/l10n_ve_compliance_manager` en tu `addons_path` y reinicia Odoo.
+
+---
+
+## 🧪 Tests
+
+El módulo incluye pruebas unitarias con `TransactionCase` que cubren:
+
+- Cálculo de vencimientos SENIAT (dígitos 0 y 1, enero 2026).
+- Generación de alertas por el cron (due_soon, overdue, missing_payment).
+- Cálculo de `compliance_score` (rango 0–100).
+- Generación automática de retenciones en facturas `in_invoice`.
+- Cambio a `expired` de documentos vencidos.
+
+Ejecutar:
+
+```bash
+docker compose run --rm web odoo -d contea \
+  -u l10n_ve_compliance_manager \
+  --test-enable --stop-after-init --workers 0 \
+  --test-tags /l10n_ve_compliance_manager:standard
+```
+
+---
+
+## 🗂️ Estructura del proyecto
+
+```
+contafis-odoo-19.0v/
+├── AGENTS.md
+├── SPEC.md
+├── CHANGELOG.md
+├── CONTRIBUTING.md
+├── LICENSE
+├── README.md
+├── docker-compose.yml
+├── odoo.conf.example
+├── opencode.json
+├── .opencode/
+│   └── skills/
+│       └── calcular-retencion-venezuela/
+├── docs/
+│   └── specs/
+│       ├── 01-calendario-seniat.md
+│       ├── 02-gestion-alertas.md
+│       ├── 03-cartelera-fiscal.md
+│       ├── 04-retenciones.md
+│       └── 05-dashboard-reportes.md
+└── addons/
+    └── l10n_ve_compliance_manager/
+        ├── __manifest__.py
+        ├── models/
+        ├── views/
+        ├── data/
+        ├── demo/
+        ├── security/
+        ├── report/
+        └── tests/
+```
+
+---
+
+## 🧠 Metodología: Spec-Driven Development
+
+Este proyecto aplica **SDD (Spec-Driven Development)** asistido por
+agentes IA:
+
+- `SPEC.md` → índice de capacidades.
+- `docs/specs/*.md` → una spec autocontenida por capacidad.
+- `AGENTS.md` → manual de operaciones para el agente IA.
+- `opencode.json` → configuración del subagente `odoo19-dev`.
+- `.opencode/skills/` → skills reutilizables específicos del dominio.
+
+---
+
+## 🛠️ Herramientas y metodología
+
+- **Odoo 19.0 Community** (LTS hasta 2028)
+- **Python 3.10+**
+- **PostgreSQL 14+**
+- **Docker / Docker Compose**
+- **OpenCode** (agente IA)
+- **Spec-Driven Development (SDD)**
+
+---
+
+## 📸 Capturas
+
+Próximamente: dashboard del contador, vista de obligaciones, alertas
+generadas por el cron y reporte PDF.
+
+---
+
+## 🗺️ Roadmap
+
+- ☑ Fase 1: Estructura del módulo y modelos base
+- ☑ Fase 2: Seguridad y vistas (list / form / kanban / search)
+- ☑ Fase 3: Cálculo de vencimientos, cron y alertas
+- ☑ Fase 4: Secuencias, datos demo y calendario SENIAT 2026
+- ☑ Fase 5: Dashboard del contador y reporte PDF
+- ☑ Fase 6: Retenciones e integración con `account.move`
+- ☑ Fase 7: Pruebas unitarias
+- □ Integración con MCP de Odoo (desarrollo asistido por IA)
+- □ Tests extendidos (document_missing, calendario SENIAT otros años)
+- □ Integración opcional con WhatsApp Business API
+- □ Portal del cliente (solo lectura)
+
+---
+
+## 🤝 Contribuciones
+
+Las contribuciones son bienvenidas. Para cambios importantes, por favor
+abre primero un *issue* para discutir qué te gustaría cambiar.
+
+Ver [CONTRIBUTING.md](CONTRIBUTING.md) para más detalles.
+
+---
+
+## 👤 Autor
+
+**Eurick Ospino** — Contador y desarrollador Odoo
+
+- GitHub: [@MrErov](https://github.com/MrErov)
+- LinkedIn: [eurick-ospino](https://www.linkedin.com/in/eurick-ospino-18a75a134/)
+- Email: eurickramiro.ospinovelasquez@gmail.com
+
+---
+
+## 📄 Licencia
+
+Este proyecto está bajo la licencia **LGPL-3.0**. Consulta el archivo
+[LICENSE](LICENSE) para más detalles.
