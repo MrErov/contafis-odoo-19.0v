@@ -257,6 +257,142 @@ class ImportWizard(models.TransientModel):
         text = ''.join(c for c in text if not unicodedata.combining(c))
         return text.replace(' ', '_').replace('-', '_')
 
+    @api.model
+    def _parse_number(self, value):
+        """
+        Convierte strings numéricos con formato venezolano/latino a float.
+        Maneja:
+          '1.234,56'  → 1234.56
+          '1,234.56'  → 1234.56
+          '1234,56'   → 1234.56
+          '1234.56'   → 1234.56
+          '1.234'     → 1234.0
+          '-1.234,56' → -1234.56
+          ''          → None
+        Retorna float o None si falla.
+        """
+        if value is None or value == '':
+            return None
+        if isinstance(value, (int, float)):
+            return float(value)
+        s = str(value).strip()
+        if not s:
+            return None
+        # Manejar signo negativo
+        negative = s.startswith('-')
+        if negative:
+            s = s[1:]
+        # Detectar separadores
+        has_dot = '.' in s
+        has_comma = ',' in s
+        if has_dot and has_comma:
+            # Ambos presentes: el último es decimal
+            last_dot = s.rfind('.')
+            last_comma = s.rfind(',')
+            if last_dot > last_comma:
+                # Punto es decimal
+                s = s.replace(',', '')
+            else:
+                # Coma es decimal
+                s = s.replace('.', '').replace(',', '.')
+        elif has_comma:
+            # Solo coma: puede ser decimal o miles
+            parts = s.split(',')
+            if len(parts[-1]) <= 2:
+                # Última parte 1-2 dígitos → decimal
+                s = s.replace(',', '.')
+            else:
+                # 3 dígitos → separador de miles
+                s = s.replace(',', '')
+        elif has_dot:
+            # Solo punto: puede ser decimal o miles
+            parts = s.split('.')
+            if len(parts[-1]) <= 2:
+                # Última parte 1-2 dígitos → decimal (ya es .)
+                pass
+            else:
+                # 3 dígitos → separador de miles
+                s = s.replace('.', '')
+        try:
+            result = float(s)
+            return -result if negative else result
+        except ValueError:
+            return None
+
+    @api.model
+    def _validate_rif(self, rif):
+        """
+        Valida RIF venezolano con algoritmo oficial módulo 11 (SENIAT).
+        Formato: [JVEGP]-XXXXXXXX-X (9 dígitos + dígito verificador)
+        
+        Algoritmo oficial SENIAT:
+        1. Extraer letra (J/V/E/G/P) y 9 dígitos (8 dígitos + 1 dígito verificador)
+        2. Usar pesos fijos para los 8 dígitos principales: [3, 2, 7, 6, 5, 4, 3, 2]
+        3. Sumar: suma = Σ(digito_i * peso_i) para i=1..8
+        4. Calcular DV = 11 - (suma % 11)
+           - Si DV = 10 → DV = 0
+           - Si DV = 11 → DV = 1
+        5. Comparar DV calculado con el 9no dígito (dígito verificador)
+        
+        La letra (J/V/E/G/P) solo valida el formato, NO afecta el cálculo del DV.
+        La letra SÍ está en el RIF pero el algoritmo SENIAT usa solo los 8 dígitos
+        para calcular el dígito verificador (la letra es solo clasificatoria).
+        
+        Ejemplo V-12345678:
+        Dígitos: 1,2,3,4,5,6,7,8 | Pesos: 3,2,7,6,5,4,3,2
+        Suma = 1*3+2*2+3*7+4*6+5*5+6*4+7*3+8*2 = 138
+        138 % 11 = 6 → DV = 11-6 = 5 → V-12345678-5 (válido)
+        
+        Ejemplo J-31527189:
+        Dígitos: 3,1,5,2,7,1,8,9 | Pesos: 3,2,7,6,5,4,3,2
+        Suma = 3*3+1*2+5*7+2*6+7*5+1*4+8*3+9*2 = 139
+        139 % 11 = 7 → DV = 11-7 = 4 → J-31527189-4 (válido)
+        """
+        if not rif:
+            return False
+        import re
+        # Limpiar y extraer letra y dígitos
+        rif_clean = str(rif).strip().upper().replace('-', '').replace('.', '').replace(' ', '')
+        match = re.match(r'^([JVEGP])(\d{9})$', rif_clean)
+        if not match:
+            return False
+        letter, digits = match.groups()
+        if len(digits) != 9:
+            return False
+        # Pesos fijos para los 8 dígitos principales (algoritmo SENIAT)
+        weights = [3, 2, 7, 6, 5, 4, 3, 2]
+        # Calcular suma de primeros 8 dígitos * pesos
+        total = sum(int(digits[i]) * weights[i] for i in range(8))
+        # Calcular dígito verificador
+        resto = total % 11
+        dv = 11 - resto
+        if dv == 10:
+            dv = 0
+        elif dv == 11:
+            dv = 1
+        # Comparar con 9no dígito (dígito verificador)
+        return dv == int(digits[8])
+
+    def action_validate_syntax(self):
+        """
+        Valida la sintaxis de todas las líneas del preview.
+        Muestra notificación con resumen.
+        """
+        self.ensure_one()
+        for line in self.line_ids:
+            line._validate_syntax()
+        total = len(self.line_ids)
+        errors = len(self.line_ids.filtered(lambda l: l.state == 'error'))
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Validación completada',
+                'message': f'{total - errors} válidas, {errors} con errores',
+                'type': 'success' if errors == 0 else 'warning',
+            }
+        }
+
     def action_preview(self):
         """Genera preview de las primeras N filas."""
         self.ensure_one()

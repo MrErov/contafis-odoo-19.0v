@@ -100,6 +100,10 @@
                                     <strong>Vista previa limitada a
                                     <field name="preview_limit" class="oe_inline"/> filas.</strong>
                                 </div>
+                                <div class="mb-3">
+                                    <button name="action_validate_syntax" string="Validar Sintaxis"
+                                            type="object" class="btn-primary"/>
+                                </div>
                                 <field name="line_ids" nolabel="1"
                                        domain="[('state', 'in', ['draft', 'validated', 'error'])]">
                                     <list readonly="1" decoration-danger="state == 'error'"
