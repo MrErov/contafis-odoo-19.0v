@@ -7,5 +7,9 @@ from . import document
 from . import alert
 from . import retention
 from . import retention_service
+from . import import_wizard
+from . import import_mapping
+from . import import_line
+from . import import_log
 from . import account_move
 from . import res_partner

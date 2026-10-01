@@ -23,3 +23,12 @@ access_l10n_ve_alert_accountant,l10n.ve.alert.accountant,model_l10n_ve_alert,l10
 access_l10n_retention_user,l10n.retention.user,model_l10n_retention,account.group_account_user,1,0,0,0
 access_l10n_retention_manager,l10n.retention.manager,model_l10n_retention,account.group_account_manager,1,1,1,1
 access_l10n_retention_accountant,l10n.retention.accountant,model_l10n_retention,l10n_ve_compliance_accountant,1,1,1,1
+access_l10n_ve_import_log_user,l10n.ve.import.log.user,model_l10n_ve_import_log,account.group_account_user,1,0,0,0
+access_l10n_ve_import_log_manager,l10n.ve.import.log.manager,model_l10n_ve_import_log,account.group_account_manager,1,1,1,1
+access_l10n_ve_import_log_accountant,l10n.ve.import.log.accountant,model_l10n_ve_import_log,l10n_ve_compliance_accountant,1,1,1,1
+access_l10n_ve_import_wizard_user,l10n.ve.import.wizard.user,model_l10n_ve_import_wizard,base.group_user,1,1,1,1
+access_l10n_ve_import_wizard_manager,l10n.ve.import.wizard.manager,model_l10n_ve_import_wizard,account.group_account_manager,1,1,1,1
+access_l10n_ve_import_mapping_user,l10n.ve.import.mapping.user,model_l10n_ve_import_mapping,base.group_user,1,1,1,1
+access_l10n_ve_import_mapping_manager,l10n.ve.import.mapping.manager,model_l10n_ve_import_mapping,account.group_account_manager,1,1,1,1
+access_l10n_ve_import_line_user,l10n.ve.import.line.user,model_l10n_ve_import_line,base.group_user,1,1,1,1
+access_l10n_ve_import_line_manager,l10n.ve.import.line.manager,model_l10n_ve_import_line,account.group_account_manager,1,1,1,1

@@ -67,4 +67,5 @@ Consultar `docs/memory.md` para:
 - `docs/specs/03-cartelera-fiscal.md` → documentos
 - `docs/specs/04-retenciones.md` → retenciones
 - `docs/specs/05-dashboard-reportes.md` → dashboard y reportes
+- `docs/specs/06-importacion-excel.md` → importación desde Excel
 - `docs/memory.md` → decisiones y contexto

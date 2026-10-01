@@ -35,6 +35,7 @@ Incluye:
         'views/obligation_views.xml',
         'views/account_move_views.xml',
         'views/menu.xml',
+        'views/import_views.xml',
     ],
     'demo': [
         'demo/demo_data.xml',
