@@ -23,7 +23,10 @@ docker compose run --rm web odoo -d contea -i l10n_ve_compliance_manager --stop-
 docker compose run --rm web odoo -d contea -u l10n_ve_compliance_manager --stop-after-init --workers 0
 
 # Correr tests
-docker compose run --rm web odoo -d contea -u l10n_ve_compliance_manager --test-enable --stop-after-init --workers 0
+docker compose run --rm web odoo -d contea \
+  -u l10n_ve_compliance_manager \
+  --test-enable --stop-after-init --workers 0 \
+  --test-tags /l10n_ve_compliance_manager
 
 # Ver logs
 docker compose logs -f web

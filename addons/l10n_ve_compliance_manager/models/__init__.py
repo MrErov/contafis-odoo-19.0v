@@ -6,5 +6,6 @@ from . import document_type
 from . import document
 from . import alert
 from . import retention
+from . import retention_service
 from . import account_move
 from . import res_partner
