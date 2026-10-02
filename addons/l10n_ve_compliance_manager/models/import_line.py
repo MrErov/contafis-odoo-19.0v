@@ -1,3 +1,5 @@
+import re
+
 from odoo import fields, models
 from odoo.exceptions import UserError
 from odoo.tools.translate import _
@@ -161,4 +163,142 @@ class ImportLine(models.TransientModel):
         if errors:
             self.write({'state': 'error', 'error_msg': '; '.join(errors)})
             return False
+        return True
+
+    def _validate_business(self):
+        """
+        Valida nivel 3 (negocio): reglas específicas del dominio venezolano.
+        Se ejecuta después de _validate_syntax() y _validate_reference().
+
+        Reglas por modelo destino (wizard.import_type):
+
+        1. l10n.ve.obligation:
+           - period debe tener formato MM/YYYY
+           - due_date >= hoy (si el período es futuro) o puede ser pasada
+           - amount > 0
+           - Si obligation_type_id.periodicity == 'anual', period debe ser YYYY
+
+        2. l10n.ve.document:
+           - expiry_date >= issue_date (si ambos existen)
+           - expiry_date > hoy (si el documento está 'valid')
+           - number no debe estar vacío
+
+        3. l10n.ve.compliance.client:
+           - rif debe pasar _validate_rif()
+           - activity_type debe ser uno de: comercio, servicios, industria, mixto
+
+        4. l10n.retention:
+           - amount > 0
+           - invoice_id.move_type == 'in_invoice'
+           - date <= hoy
+
+        Si alguna regla falla, añade a self.error_msg:
+          "Regla de negocio: {descripción del error}"
+
+        Cambia self.state a 'error' si hay errores.
+        Retorna True si no hay errores, False si hay alguno.
+        """
+        self.ensure_one()
+        wizard = self.wizard_id
+        if not wizard or not self.data:
+            self.write({'state': 'error', 'error_msg': 'Sin wizard o datos'})
+            return False
+
+        errors = []
+        data = self.data or {}
+        model_name = self.model_name or ''
+        # Obtener el tipo de importación del wizard
+        import_type = wizard.import_type if wizard else False
+
+        if import_type == 'obligation':
+            # Validar period formato MM/YYYY
+            period = data.get('period')
+            if period:
+                if not re.match(r'^\d{2}/\d{4}$', period):
+                    errors.append("Regla de negocio: period debe tener formato MM/YYYY")
+                else:
+                    # Validar due_date >= hoy si período es futuro
+                    due_date = data.get('due_date')
+                    if due_date:
+                        today = fields.Date.today()
+                        due = fields.Date.to_date(due_date)
+                        if due < today:
+                            errors.append("Regla de negocio: due_date no puede ser anterior a hoy para períodos pasados")
+                    # Validar amount > 0
+                    amount = data.get('amount')
+                    if amount is not None and amount <= 0:
+                        errors.append("Regla de negocio: amount debe ser > 0")
+                    # Validar periodicity anual => period debe ser YYYY
+                    periodicity = data.get('periodicity')
+                    if periodicity == 'anual':
+                        # period Ya validó formato MM/YYYY, pero anual debe ser YYYY solo
+                        # Odoo usa period como char, así que validamos que sea solo año
+                        if not re.match(r'^\d{4}$', period):
+                            errors.append("Regla de negocio: period anual debe ser YYYY")
+
+        elif import_type == 'document':
+            # Validar expiry_date >= issue_date (si ambos existen)
+            expiry_date = data.get('expiry_date')
+            issue_date = data.get('issue_date')
+            if expiry_date and issue_date:
+                exp = fields.Date.to_date(expiry_date)
+                iss = fields.Date.to_date(issue_date)
+                if exp < iss:
+                    errors.append("Regla de negocio: expiry_date debe ser >= issue_date")
+            # Validar expiry_date > hoy si documento está 'valid'
+            state = data.get('state')
+            if state == 'valid' and expiry_date:
+                exp = fields.Date.to_date(expiry_date)
+                today = fields.Date.today()
+                if exp <= today:
+                    errors.append("Regla de negocio: expiry_date debe ser > hoy para documentos 'valid'")
+            # Validar number no vacío
+            number = data.get('number')
+            if not number:
+                errors.append("Regla de negocio: number no debe estar vacío")
+
+        elif import_type == 'client':
+            # Validar rif pasa _validate_rif()
+            rif = data.get('rif')
+            if rif:
+                if not wizard._validate_rif(rif):
+                    errors.append("Regla de negocio: RIF inválido")
+            # Validar activity_type es uno de: comercio, servicios, industria, mixto
+            activity_type = data.get('activity_type')
+            if activity_type:
+                valid_types = ['comercio', 'servicios', 'industria', 'mixto']
+                if activity_type not in valid_types:
+                    errors.append("Regla de negocio: activity_type debe ser uno de: comercio, servicios, industria, mixto")
+
+        elif import_type == 'retention':
+            # Validar amount > 0
+            amount = data.get('amount')
+            if amount is not None and amount <= 0:
+                errors.append("Regla de negocio: amount debe ser > 0")
+            # Validar invoice_id.move_type == 'in_invoice'
+            invoice_ref = data.get('invoice_id')
+            if invoice_ref:
+                invoice = self.env['account.move'].search([
+                    ('ref', '=', invoice_ref),
+                    ('move_type', '=', 'in_invoice'),
+                ], limit=1)
+                if not invoice:
+                    errors.append("Regla de negocio: factura no encontrada por ref")
+                elif invoice.move_type != 'in_invoice':
+                    errors.append("Regla de negocio: la factura debe ser in_invoice")
+            # Validar date <= hoy
+            date = data.get('date')
+            if date:
+                today = fields.Date.today()
+                dt = fields.Date.to_date(date)
+                if dt > today:
+                    errors.append("Regla de negocio: date debe ser <= hoy")
+
+        if errors:
+            self.write({
+                'state': 'error',
+                'error_msg': '; '.join(errors)
+            })
+            return False
+        self.write({'state': 'validated', 'error_msg': False})
         return True
