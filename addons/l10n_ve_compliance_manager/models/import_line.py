@@ -95,3 +95,70 @@ class ImportLine(models.TransientModel):
         else:
             self.write({'state': 'validated', 'error_msg': False})
             return True
+
+    def _validate_reference(self):
+        """
+        Valida nivel 2 (referencial): que los registros Many2one referenciados
+        existan en la BD. Se ejecuta después de _validate_syntax().
+
+        Por cada mapping_id del wizard:
+        - field_name == 'client_id': buscar l10n.ve.compliance.client por rif
+        - field_name == 'obligation_type_id': buscar l10n.ve.obligation.type por name
+        - field_name == 'document_type_id': buscar l10n.ve.document.type por name
+        - field_name == 'partner_id': buscar res.partner por vat o rif
+
+        Si no encuentra el registro, añade a self.error_msg:
+          "Referencia no encontrada: {field_name}={valor}"
+
+        Cambia self.state a 'error' si hay errores.
+        Retorna True si no hay errores, False si hay alguno.
+
+        NO resuelve los IDs (eso lo hace el importador). Solo valida existencia.
+        """
+        self.ensure_one()
+        wizard = self.wizard_id
+        if not wizard or not self.data:
+            self.write({'state': 'error', 'error_msg': 'Sin wizard o datos'})
+            return False
+
+        errors = []
+        data = self.data or {}
+        mappings = wizard.mapping_ids.filtered(lambda m: m.field_name and m.field_type == 'many2one')
+
+        for m in mappings:
+            value = self.data.get(m.field_name) if self.data else None
+            if value is None or value == '':
+                continue
+
+            field_name = m.field_name
+            relation_model = m.relation_model
+
+            record = None
+            if field_name == 'client_id' and relation_model == 'l10n.ve.compliance.client':
+                # Buscar por RIF
+                record = self.env['l10n.ve.compliance.client'].search([
+                    ('rif', '=', value)
+                ], limit=1)
+            elif field_name == 'obligation_type_id' and relation_model == 'l10n.ve.obligation.type':
+                # Buscar por name
+                record = self.env['l10n.ve.obligation.type'].search([
+                    ('name', '=', value)
+                ], limit=1)
+            elif field_name == 'document_type_id' and relation_model == 'l10n.ve.document.type':
+                # Buscar por name
+                record = self.env['l10n.ve.document.type'].search([
+                    ('name', '=', value)
+                ], limit=1)
+            elif field_name == 'partner_id' and relation_model == 'res.partner':
+                # Buscar por RIF o VAT
+                record = self.env['res.partner'].search([
+                    '|', ('vat', '=', value), ('rif', '=', value)
+                ], limit=1)
+
+            if not record:
+                errors.append(f"Referencia no encontrada: {m.col_name} ({m.field_name}) = '{value}' en {relation_model}")
+
+        if errors:
+            self.write({'state': 'error', 'error_msg': '; '.join(errors)})
+            return False
+        return True
