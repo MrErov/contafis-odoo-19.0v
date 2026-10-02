@@ -114,6 +114,13 @@ Si el número de tests verdes BAJA, es regresión tuya. NO lo disfraces.
 Razón: un `git checkout -- <path>` durante un revert borra cambios sin
 commitear. Se perdió trabajo real por esta razón en Fase 2B.
 
+### 5. Archivos de output y rutas externas
+
+- ❌ NO escribir archivos de output a disco (`test_output*.txt`, `result*.log`).
+- ❌ NO intentar acceder a rutas fuera del proyecto (`C:\tmp\`, `/tmp/`).
+- ❌ NO modificar `models/` si la tarea es solo de tests.
+- 🛑 Si un comando falla, DETENERSE. NO crear variantes (`test_output2.txt`, etc.).
+
 ## Workflow de sub-tareas
 
 Para tareas grandes (>100 líneas), dividir en sub-tareas de máximo 1-2 horas.
