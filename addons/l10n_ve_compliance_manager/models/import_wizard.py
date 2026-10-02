@@ -490,48 +490,59 @@ class ImportWizard(models.TransientModel):
         return errors
 
     def action_import(self):
-        """Ejecuta la importación real (upsert batch con savepoints)."""
+        """
+        Ejecuta la importación real (upsert batch con savepoints).
+        Modo strict: primer error → rollback total y excepción.
+        Modo lax: continúa procesando, reporta errores por fila.
+        """
         self.ensure_one()
-        if self.mode == 'strict' and self.line_ids.filtered(lambda l: l.state == 'error'):
-            raise UserError(_('Modo estricto: hay errores. Corríjalos antes de importar.'))
+        if self.mode == 'strict':
+            lines_with_errors = self.line_ids.filtered(
+                lambda l: l.state == 'error'
+            )
+            if lines_with_errors:
+                raise UserError(
+                    f"Modo estricto: hay {len(lines_with_errors)} fila(s) con error. "
+                    "Corríjalos antes de importar o cambie a modo lax."
+                )
 
-        lines_to_process = self.line_ids.filtered(
+        lines = self.line_ids.filtered(
             lambda l: l.state in ('validated', 'draft')
         )
-        success_count = 0
-        error_count = 0
-        skipped_count = 0
+        error_fatal = False
+        for line in lines:
+            action = self._import_line(line)
+            if action == 'error' and self.mode == 'strict':
+                error_fatal = True
+                break
+
+        if error_fatal:
+            raise UserError(
+                "Importación abortada en modo estricto por error en una fila."
+            )
+
+        # Crear log persistente (solo si no hubo error fatal)
+        # Re-contar stats desde los states de las líneas
+        success_count = len(self.line_ids.filtered(
+            lambda l: l.state in ('imported', 'updated')
+        ))
+        error_count = len(self.line_ids.filtered(lambda l: l.state == 'error'))
+        skipped_count = len(self.line_ids.filtered(lambda l: l.state == 'skipped'))
+
+        # Obtener records del log desde record_ids JSON
+        import json
         records_created = []
+        for line in self.line_ids.filtered(lambda l: l.state in ('imported', 'updated')):
+            if line.record_ids:
+                try:
+                    parsed = json.loads(line.record_ids)
+                    records_created.extend(parsed)
+                except Exception:
+                    pass
 
-        for line in lines_to_process:
-            try:
-                with self.env.cr.savepoint():
-                    record = self._import_line(line)
-                    if record:
-                        line.write({
-                            'state': 'imported',
-                            'record_id': f'{record._name},{record.id}',
-                            'record_name': record.display_name,
-                            'model_name': record._name,
-                            'error_msg': False,
-                        })
-                        records_created.append({
-                            'model': record._name,
-                            'id': record.id,
-                            'name': record.display_name,
-                        })
-                        success_count += 1
-                    else:
-                        line.write({'state': 'skipped'})
-                        skipped_count += 1
-            except Exception as e:
-                line.write({'state': 'error', 'error_msg': str(e)})
-                error_count += 1
-                if self.mode == 'strict':
-                    raise
-
-        # Crear log persistente
-        self._create_import_log(success_count, error_count, skipped_count, records_created)
+        self._create_import_log(
+            success_count, error_count, skipped_count, records_created
+        )
 
         self.state = 'done'
         return {
@@ -542,10 +553,132 @@ class ImportWizard(models.TransientModel):
             'target': 'new',
         }
 
+    def _upsert_record(self, model_name, values, unique_domain):
+        """
+        Busca por unique_domain. Si existe → write. Si no → create.
+        Retorna (record, 'created' | 'updated').
+        """
+        Model = self.env[model_name]
+        existing = Model.search(unique_domain, limit=1)
+        if existing:
+            existing.write(values)
+            return existing, 'updated'
+        else:
+            record = Model.create(values)
+            return record, 'created'
+
+    def _get_import_target(self, line, values):
+        """
+        Devuelve (model_name, unique_domain) según wizard.import_type.
+        """
+        wizard = self
+        import_type = wizard.import_type
+
+        if import_type == 'obligation':
+            client_id = values.get('client_id')
+            obligation_type_id = values.get('obligation_type_id')
+            period = values.get('period')
+            model_name = 'l10n.ve.obligation'
+            unique_domain = [
+                ('client_id', '=', client_id),
+                ('obligation_type_id', '=', obligation_type_id),
+                ('period', '=', period),
+            ]
+            return model_name, unique_domain
+
+        elif import_type == 'document':
+            client_id = values.get('client_id')
+            document_type_id = values.get('document_type_id')
+            number = values.get('number')
+            model_name = 'l10n.ve.document'
+            unique_domain = [
+                ('client_id', '=', client_id),
+                ('document_type_id', '=', document_type_id),
+                ('number', '=', number),
+            ]
+            return model_name, unique_domain
+
+        elif import_type == 'client':
+            rif = values.get('rif')
+            model_name = 'l10n.ve.compliance.client'
+            unique_domain = [('rif', '=', rif)]
+            return model_name, unique_domain
+
+        elif import_type == 'retention':
+            invoice_id = values.get('invoice_id')
+            partner_id = values.get('partner_id')
+            model_name = 'l10n.ve.retention'
+            unique_domain = [
+                ('invoice_id', '=', invoice_id),
+                ('partner_id', '=', partner_id),
+            ]
+            return model_name, unique_domain
+
+        return 'l10n.ve.import.wizard', []
+
+    def _resolve_values(self, line):
+        """
+        Resuelve los Many2one campos y construye un dict de valores
+        plano para upsert a partir de los datos de la línea y el mapping.
+        """
+        wizard = self
+        data = line.data or {}
+        mappings = wizard.mapping_ids.filtered(lambda m: m.field_name)
+
+        values = {}
+        for m in mappings:
+            field_name = m.field_name
+            if field_name not in data:
+                continue
+            value = data[field_name]
+
+            # Resolver Many2one: buscar ID por dominio si viene valor de texto
+            if m.field_type == 'many2one' and value:
+                relation_model = m.relation_model
+                if relation_model == 'res.partner' and field_name in ('vat', 'rif'):
+                    # Buscar partner por RIF o VAT
+                    partner = self.env['res.partner'].search([
+                        '|', ('vat', '=', value), ('rif', '=', value)
+                    ], limit=1)
+                    values[field_name] = partner.id if partner else False
+                elif relation_model and field_name in ('client_id', 'obligation_type_id',
+                                                       'document_type_id', 'partner_id'):
+                    # Buscar por name o código dependiendo del modelo
+                    record = self.env[relation_model].search([
+                        ('name', '=', value)
+                    ], limit=1)
+                    values[field_name] = record.id if record else False
+                else:
+                    values[field_name] = value
+            else:
+                values[field_name] = value
+
+        return values
+
     def _import_line(self, line):
-        """Importa una línea según el import_type. Retorna registro creado/actualizado."""
-        # Placeholder: lógica específica por import_type se implementa en Fase 2
-        return None
+        """
+        Importa UNA línea usando savepoint para rollback granular.
+        Retorna 'created' | 'updated' | 'error'.
+        """
+        try:
+            with self.env.cr.savepoint():
+                # Resolver Many2one según mapping
+                values = self._resolve_values(line)
+                # Determinar modelo y clave única según import_type
+                model_name, unique_domain = self._get_import_target(line, values)
+                # Upsert
+                record, action = self._upsert_record(model_name, values, unique_domain)
+                # Actualizar la línea
+                line.write({
+                    'state': 'imported' if action == 'created' else 'updated',
+                    'record_id': f"{model_name},{record.id}",
+                    'record_name': record.display_name,
+                    'model_name': model_name,
+                })
+                return action
+        except Exception as e:
+            line.write({'state': 'error', 'error_msg': str(e)[:500]})
+            return 'error'
 
     def _create_import_log(self, success_count, error_count, skipped_count, records_created):
         """Crea log persistente de importación."""
