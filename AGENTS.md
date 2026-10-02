@@ -150,6 +150,12 @@ docker compose run --rm web odoo -d contea
 4. Confirmar: `0 failed, 0 error(s) of N tests` donde N >= último valor conocido.
 5. Si N < valor anterior → REGRESIÓN. Revertir con `git checkout` y avisar.
 
+### Conteo de tests — fuente oficial
+El ÚNICO conteo válido es el que reporta Odoo:
+`odoo.tests.result: 0 failed, 0 error(s) of N tests`
+NO usar `grep -c "def test_"`. NO inventar cifras. Si el agente reporta
+un número distinto al de Odoo, es error del agente.
+
 Reportar al usuario:
 - Lista de archivos modificados
 - Conteo de tests (antes / después)
