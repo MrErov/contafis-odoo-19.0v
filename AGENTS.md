@@ -113,3 +113,51 @@ Si el número de tests verdes BAJA, es regresión tuya. NO lo disfraces.
 
 Razón: un `git checkout -- <path>` durante un revert borra cambios sin
 commitear. Se perdió trabajo real por esta razón en Fase 2B.
+
+## Workflow de sub-tareas
+
+Para tareas grandes (>100 líneas), dividir en sub-tareas de máximo 1-2 horas.
+Cada sub-tarea:
+
+1. **Alcance:** UNA sola cosa a implementar.
+2. **Prompt corto:** menos de 50 líneas de especificación.
+3. **Verificación:** correr tests al finalizar.
+4. **Commit:** SIEMPRE commitear si los tests pasan.
+5. **Esperar confirmación** antes de la siguiente sub-tarea.
+
+Ejemplos bien divididos:
+- "Implementar _validate_reference() en import_line.py"
+- "Añadir botón Validar al wizard"
+
+Ejemplo mal dividido:
+- "Implementar motor completo con 4 importadores, validación 3 niveles
+  y tests de integración" (demasiado grande)
+
+Si una sub-tarea genera más de 200 líneas de código nuevo, está mal dividida.
+
+## Verificación obligatoria antes de declarar éxito
+
+Antes de decir "tarea completada":
+
+1. `git status` → solo los archivos esperados están modificados.
+2. `git diff --stat` → cantidad de cambios coherente.
+3. Correr tests:
+docker compose run --rm web odoo -d contea
+-u l10n_ve_compliance_manager
+--test-enable --stop-after-init --workers 0
+--test-tags /l10n_ve_compliance_manager 2>&1 | grep -E "failed|tests when"
+
+4. Confirmar: `0 failed, 0 error(s) of N tests` donde N >= último valor conocido.
+5. Si N < valor anterior → REGRESIÓN. Revertir con `git checkout` y avisar.
+
+Reportar al usuario:
+- Lista de archivos modificados
+- Conteo de tests (antes / después)
+- Diff stat
+- Cualquier warning nuevo en los logs
+
+## Reglas estrictas
+
+- Añadir al FINAL del archivo, no en medio.
+- Asegurar nueva línea final (`\n` al terminar).
+- NO modificar la sección Anti-patterns existente.
