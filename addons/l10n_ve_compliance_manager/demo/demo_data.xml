@@ -1,46 +1,6 @@
 <odoo>
     <data>
 
-        <record id="institution_demo_seniat" model="l10n.ve.institution">
-            <field name="name">SENIAT</field>
-            <field name="type">seniat</field>
-            <field name="rif">J-00002955-5</field>
-            <field name="portal_url">https://www.seniat.gob.ve</field>
-            <field name="contact_info">Servicio Nacional Integrado de Administración Aduanera y Tributaria</field>
-        </record>
-
-        <record id="institution_demo_ivss" model="l10n.ve.institution">
-            <field name="name">IVSS</field>
-            <field name="type">ivss</field>
-            <field name="rif">J-00008705-7</field>
-            <field name="portal_url">https://www.ivss.gob.ve</field>
-            <field name="contact_info">Instituto Venezolano de los Seguros Sociales</field>
-        </record>
-
-        <record id="institution_demo_inces" model="l10n.ve.institution">
-            <field name="name">INCES</field>
-            <field name="type">inces</field>
-            <field name="rif">J-00011001-0</field>
-            <field name="portal_url">https://www.inces.gob.ve</field>
-            <field name="contact_info">Instituto Nacional de Capacitación y Educación Socialista</field>
-        </record>
-
-        <record id="institution_demo_banavih" model="l10n.ve.institution">
-            <field name="name">BANAVIH</field>
-            <field name="type">banavih</field>
-            <field name="rif">J-00083297-0</field>
-            <field name="portal_url">https://www.banavih.gob.ve</field>
-            <field name="contact_info">Banco Nacional de Vivienda y Hábitat</field>
-        </record>
-
-        <record id="institution_demo_municipality" model="l10n.ve.institution">
-            <field name="name">Alcaldía</field>
-            <field name="type">municipal</field>
-            <field name="rif">J-00000000-1</field>
-            <field name="portal_url"></field>
-            <field name="contact_info">Alcaldía correspondiente al municipio del cliente</field>
-        </record>
-
         <record id="obligation_type_demo_iva" model="l10n.ve.obligation.type">
             <field name="name">IVA Mensual</field>
             <field name="institution_id" ref="institution_demo_seniat"/>
@@ -197,6 +157,7 @@
 
         <record id="document_type_demo_rif" model="l10n.ve.document.type">
             <field name="name">RIF</field>
+            <field name="code">RIF</field>
             <field name="institution_id" ref="institution_demo_seniat"/>
             <field name="validity_days">0</field>
             <field name="renewal_alert_days">30</field>
@@ -206,6 +167,7 @@
 
         <record id="document_type_demo_licencia_economicas" model="l10n.ve.document.type">
             <field name="name">Licencia de Actividades Económicas</field>
+            <field name="code">LAE</field>
             <field name="institution_id" ref="institution_demo_municipality"/>
             <field name="validity_days">365</field>
             <field name="renewal_alert_days">30</field>
@@ -215,6 +177,7 @@
 
         <record id="document_type_demo_solvencia_laboral" model="l10n.ve.document.type">
             <field name="name">Solvencia Laboral</field>
+            <field name="code">SOL-LAB</field>
             <field name="institution_id" ref="institution_demo_ivss"/>
             <field name="validity_days">90</field>
             <field name="renewal_alert_days">15</field>
@@ -224,6 +187,7 @@
 
         <record id="document_type_demo_certificado_inces" model="l10n.ve.document.type">
             <field name="name">Certificado INCES</field>
+            <field name="code">CERT-INC</field>
             <field name="institution_id" ref="institution_demo_inces"/>
             <field name="validity_days">365</field>
             <field name="renewal_alert_days">30</field>
@@ -233,6 +197,7 @@
 
         <record id="document_type_demo_permiso_bomberos" model="l10n.ve.document.type">
             <field name="name">Permiso de Bomberos</field>
+            <field name="code">BOMB</field>
             <field name="institution_id" ref="institution_demo_municipality"/>
             <field name="validity_days">365</field>
             <field name="renewal_alert_days">30</field>

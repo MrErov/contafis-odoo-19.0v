@@ -12,6 +12,7 @@ class VeInstitution(models.Model):
         ('inces', 'INCES'),
         ('banavih', 'BANAVIH'),
         ('municipal', 'Municipal'),
+        ('mintra', 'MINTRA'),
         ('saren', 'SAREN'),
         ('otro', 'Otro'),
     ], string='Tipo')

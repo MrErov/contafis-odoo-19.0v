@@ -158,6 +158,7 @@ class TestObligation(TransactionCase):
         institution = self._create_institution()
         document_type = self.env['l10n.ve.document.type'].create({
             'name': 'RIF Test',
+            'code': 'RIF-TEST',
             'institution_id': institution.id,
             'validity_days': 0,
             'renewal_alert_days': 30,

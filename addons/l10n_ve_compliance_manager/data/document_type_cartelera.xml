@@ -1,0 +1,396 @@
+<odoo>
+    <data noupdate="1">
+        <!--
+        Tipos de documento del "Excel de Control de Cartelera Fiscal" usado por
+        los contadores venezolanos (36 documentos, columnas E..AN del Excel).
+
+        Orden EXACTO de las columnas del Excel (fila 3 de encabezados):
+          C01-C04  Extras (institución municipal / Alcaldía)
+          C05-C12  SENIAT
+          C13-C17  IVSS
+          C18-C19  INCES
+          C20-C23  APORTE FAOV/BANAVIH
+          C24-C29  MINTRA
+          C30-C36  ALCALDÍA
+
+        El campo `code` (C01..C36) es la clave estable de mapeo: varios nombres
+        se repiten entre instituciones ("Planilla de Inscripción", "Último
+        soporte de Pago") y solo institution_id los diferencia.
+        -->
+
+        <!-- ==================== Extras → Alcaldía (municipal) ==================== -->
+
+        <record id="document_type_cartelera_01" model="l10n.ve.document.type">
+            <field name="name">Publicación Mercantil</field>
+            <field name="code">C01</field>
+            <field name="institution_id" ref="institution_demo_municipality"/>
+            <field name="validity_days">365</field>
+            <field name="renewal_alert_days">30</field>
+            <field name="required_for">company</field>
+            <field name="alert_channel">email</field>
+        </record>
+
+        <record id="document_type_cartelera_02" model="l10n.ve.document.type">
+            <field name="name">Permiso de Bomberos</field>
+            <field name="code">C02</field>
+            <field name="institution_id" ref="institution_demo_municipality"/>
+            <field name="validity_days">365</field>
+            <field name="renewal_alert_days">30</field>
+            <field name="required_for">company</field>
+            <field name="alert_channel">email</field>
+        </record>
+
+        <record id="document_type_cartelera_03" model="l10n.ve.document.type">
+            <field name="name">Certificado de Salud</field>
+            <field name="code">C03</field>
+            <field name="institution_id" ref="institution_demo_municipality"/>
+            <field name="validity_days">365</field>
+            <field name="renewal_alert_days">30</field>
+            <field name="required_for">company</field>
+            <field name="alert_channel">email</field>
+        </record>
+
+        <record id="document_type_cartelera_04" model="l10n.ve.document.type">
+            <field name="name">Permiso Sanitario</field>
+            <field name="code">C04</field>
+            <field name="institution_id" ref="institution_demo_municipality"/>
+            <field name="validity_days">365</field>
+            <field name="renewal_alert_days">30</field>
+            <field name="required_for">company</field>
+            <field name="alert_channel">email</field>
+        </record>
+
+        <!-- ==================== SENIAT ==================== -->
+
+        <record id="document_type_cartelera_05" model="l10n.ve.document.type">
+            <field name="name">Copia Legal del RIF Actualizado</field>
+            <field name="code">C05</field>
+            <field name="institution_id" ref="institution_demo_seniat"/>
+            <field name="validity_days">0</field>
+            <field name="renewal_alert_days">30</field>
+            <field name="required_for">company</field>
+            <field name="alert_channel">email</field>
+        </record>
+
+        <record id="document_type_cartelera_06" model="l10n.ve.document.type">
+            <field name="name">Última declaración y Pago Estimada ISLR</field>
+            <field name="code">C06</field>
+            <field name="institution_id" ref="institution_demo_seniat"/>
+            <field name="validity_days">30</field>
+            <field name="renewal_alert_days">7</field>
+            <field name="required_for">company</field>
+            <field name="alert_channel">email</field>
+        </record>
+
+        <record id="document_type_cartelera_07" model="l10n.ve.document.type">
+            <field name="name">Última declaración y Pago ISLR</field>
+            <field name="code">C07</field>
+            <field name="institution_id" ref="institution_demo_seniat"/>
+            <field name="validity_days">30</field>
+            <field name="renewal_alert_days">7</field>
+            <field name="required_for">company</field>
+            <field name="alert_channel">email</field>
+        </record>
+
+        <record id="document_type_cartelera_08" model="l10n.ve.document.type">
+            <field name="name">Última declaración, Certificado y Pago IVA</field>
+            <field name="code">C08</field>
+            <field name="institution_id" ref="institution_demo_seniat"/>
+            <field name="validity_days">30</field>
+            <field name="renewal_alert_days">7</field>
+            <field name="required_for">company</field>
+            <field name="alert_channel">email</field>
+        </record>
+
+        <record id="document_type_cartelera_09" model="l10n.ve.document.type">
+            <field name="name">Última planilla y Pago impuesto ISLR declarado por anticipado</field>
+            <field name="code">C09</field>
+            <field name="institution_id" ref="institution_demo_seniat"/>
+            <field name="validity_days">30</field>
+            <field name="renewal_alert_days">7</field>
+            <field name="required_for">company</field>
+            <field name="alert_channel">email</field>
+        </record>
+
+        <record id="document_type_cartelera_10" model="l10n.ve.document.type">
+            <field name="name">Última planilla y Pago retención de IVA</field>
+            <field name="code">C10</field>
+            <field name="institution_id" ref="institution_demo_seniat"/>
+            <field name="validity_days">30</field>
+            <field name="renewal_alert_days">7</field>
+            <field name="required_for">company</field>
+            <field name="alert_channel">email</field>
+        </record>
+
+        <record id="document_type_cartelera_11" model="l10n.ve.document.type">
+            <field name="name">Último certificado Retención de IVA</field>
+            <field name="code">C11</field>
+            <field name="institution_id" ref="institution_demo_seniat"/>
+            <field name="validity_days">30</field>
+            <field name="renewal_alert_days">7</field>
+            <field name="required_for">company</field>
+            <field name="alert_channel">email</field>
+        </record>
+
+        <record id="document_type_cartelera_12" model="l10n.ve.document.type">
+            <field name="name">Cert. electrónico Actividad Económica</field>
+            <field name="code">C12</field>
+            <field name="institution_id" ref="institution_demo_seniat"/>
+            <field name="validity_days">365</field>
+            <field name="renewal_alert_days">30</field>
+            <field name="required_for">company</field>
+            <field name="alert_channel">email</field>
+        </record>
+
+        <!-- ==================== IVSS ==================== -->
+
+        <record id="document_type_cartelera_13" model="l10n.ve.document.type">
+            <field name="name">Planilla de Inscripción</field>
+            <field name="code">C13</field>
+            <field name="institution_id" ref="institution_demo_ivss"/>
+            <field name="validity_days">0</field>
+            <field name="renewal_alert_days">30</field>
+            <field name="required_for">company</field>
+            <field name="alert_channel">email</field>
+        </record>
+
+        <record id="document_type_cartelera_14" model="l10n.ve.document.type">
+            <field name="name">Última factura u Orden de Pago</field>
+            <field name="code">C14</field>
+            <field name="institution_id" ref="institution_demo_ivss"/>
+            <field name="validity_days">30</field>
+            <field name="renewal_alert_days">7</field>
+            <field name="required_for">company</field>
+            <field name="alert_channel">email</field>
+        </record>
+
+        <record id="document_type_cartelera_15" model="l10n.ve.document.type">
+            <field name="name">Último soporte de Pago</field>
+            <field name="code">C15</field>
+            <field name="institution_id" ref="institution_demo_ivss"/>
+            <field name="validity_days">30</field>
+            <field name="renewal_alert_days">7</field>
+            <field name="required_for">company</field>
+            <field name="alert_channel">email</field>
+        </record>
+
+        <record id="document_type_cartelera_16" model="l10n.ve.document.type">
+            <field name="name">Forma 13-12 Registro Patronal de Asegurados</field>
+            <field name="code">C16</field>
+            <field name="institution_id" ref="institution_demo_ivss"/>
+            <field name="validity_days">365</field>
+            <field name="renewal_alert_days">30</field>
+            <field name="required_for">company</field>
+            <field name="alert_channel">email</field>
+        </record>
+
+        <record id="document_type_cartelera_17" model="l10n.ve.document.type">
+            <field name="name">Lista de Trabajadores Activos</field>
+            <field name="code">C17</field>
+            <field name="institution_id" ref="institution_demo_ivss"/>
+            <field name="validity_days">30</field>
+            <field name="renewal_alert_days">7</field>
+            <field name="required_for">company</field>
+            <field name="alert_channel">email</field>
+        </record>
+
+        <!-- ==================== INCES ==================== -->
+
+        <record id="document_type_cartelera_18" model="l10n.ve.document.type">
+            <field name="name">Planilla de Inscripción</field>
+            <field name="code">C18</field>
+            <field name="institution_id" ref="institution_demo_inces"/>
+            <field name="validity_days">0</field>
+            <field name="renewal_alert_days">30</field>
+            <field name="required_for">company</field>
+            <field name="alert_channel">email</field>
+        </record>
+
+        <record id="document_type_cartelera_19" model="l10n.ve.document.type">
+            <field name="name">Comprobante de pago trimestral</field>
+            <field name="code">C19</field>
+            <field name="institution_id" ref="institution_demo_inces"/>
+            <field name="validity_days">90</field>
+            <field name="renewal_alert_days">15</field>
+            <field name="required_for">company</field>
+            <field name="alert_channel">email</field>
+        </record>
+
+        <!-- ==================== APORTE FAOV/BANAVIH ==================== -->
+
+        <record id="document_type_cartelera_20" model="l10n.ve.document.type">
+            <field name="name">Última Solvencia</field>
+            <field name="code">C20</field>
+            <field name="institution_id" ref="institution_demo_banavih"/>
+            <field name="validity_days">90</field>
+            <field name="renewal_alert_days">15</field>
+            <field name="required_for">company</field>
+            <field name="alert_channel">email</field>
+        </record>
+
+        <record id="document_type_cartelera_21" model="l10n.ve.document.type">
+            <field name="name">Comprobante de Afiliación</field>
+            <field name="code">C21</field>
+            <field name="institution_id" ref="institution_demo_banavih"/>
+            <field name="validity_days">0</field>
+            <field name="renewal_alert_days">30</field>
+            <field name="required_for">company</field>
+            <field name="alert_channel">email</field>
+        </record>
+
+        <record id="document_type_cartelera_22" model="l10n.ve.document.type">
+            <field name="name">Estado de Cuenta</field>
+            <field name="code">C22</field>
+            <field name="institution_id" ref="institution_demo_banavih"/>
+            <field name="validity_days">30</field>
+            <field name="renewal_alert_days">7</field>
+            <field name="required_for">company</field>
+            <field name="alert_channel">email</field>
+        </record>
+
+        <record id="document_type_cartelera_23" model="l10n.ve.document.type">
+            <field name="name">Último soporte de Pago</field>
+            <field name="code">C23</field>
+            <field name="institution_id" ref="institution_demo_banavih"/>
+            <field name="validity_days">30</field>
+            <field name="renewal_alert_days">7</field>
+            <field name="required_for">company</field>
+            <field name="alert_channel">email</field>
+        </record>
+
+        <!-- ==================== MINTRA ==================== -->
+
+        <record id="document_type_cartelera_24" model="l10n.ve.document.type">
+            <field name="name">Solvencia</field>
+            <field name="code">C24</field>
+            <field name="institution_id" ref="institution_demo_mintra"/>
+            <field name="validity_days">90</field>
+            <field name="renewal_alert_days">15</field>
+            <field name="required_for">company</field>
+            <field name="alert_channel">email</field>
+        </record>
+
+        <record id="document_type_cartelera_25" model="l10n.ve.document.type">
+            <field name="name">Inscripción</field>
+            <field name="code">C25</field>
+            <field name="institution_id" ref="institution_demo_mintra"/>
+            <field name="validity_days">0</field>
+            <field name="renewal_alert_days">30</field>
+            <field name="required_for">company</field>
+            <field name="alert_channel">email</field>
+        </record>
+
+        <record id="document_type_cartelera_26" model="l10n.ve.document.type">
+            <field name="name">Planilla NIL</field>
+            <field name="code">C26</field>
+            <field name="institution_id" ref="institution_demo_mintra"/>
+            <field name="validity_days">365</field>
+            <field name="renewal_alert_days">30</field>
+            <field name="required_for">company</field>
+            <field name="alert_channel">email</field>
+        </record>
+
+        <record id="document_type_cartelera_27" model="l10n.ve.document.type">
+            <field name="name">Última declaración Trimestral</field>
+            <field name="code">C27</field>
+            <field name="institution_id" ref="institution_demo_mintra"/>
+            <field name="validity_days">90</field>
+            <field name="renewal_alert_days">15</field>
+            <field name="required_for">company</field>
+            <field name="alert_channel">email</field>
+        </record>
+
+        <record id="document_type_cartelera_28" model="l10n.ve.document.type">
+            <field name="name">Última Solvencia Laboral</field>
+            <field name="code">C28</field>
+            <field name="institution_id" ref="institution_demo_mintra"/>
+            <field name="validity_days">90</field>
+            <field name="renewal_alert_days">15</field>
+            <field name="required_for">company</field>
+            <field name="alert_channel">email</field>
+        </record>
+
+        <record id="document_type_cartelera_29" model="l10n.ve.document.type">
+            <field name="name">Horario de Trabajo MPPPST</field>
+            <field name="code">C29</field>
+            <field name="institution_id" ref="institution_demo_mintra"/>
+            <field name="validity_days">0</field>
+            <field name="renewal_alert_days">30</field>
+            <field name="required_for">company</field>
+            <field name="alert_channel">email</field>
+        </record>
+
+        <!-- ==================== ALCALDÍA ==================== -->
+
+        <record id="document_type_cartelera_30" model="l10n.ve.document.type">
+            <field name="name">Licencia de Actividad Económica</field>
+            <field name="code">C30</field>
+            <field name="institution_id" ref="institution_demo_municipality"/>
+            <field name="validity_days">365</field>
+            <field name="renewal_alert_days">30</field>
+            <field name="required_for">company</field>
+            <field name="alert_channel">email</field>
+        </record>
+
+        <record id="document_type_cartelera_31" model="l10n.ve.document.type">
+            <field name="name">Cédula catastral</field>
+            <field name="code">C31</field>
+            <field name="institution_id" ref="institution_demo_municipality"/>
+            <field name="validity_days">0</field>
+            <field name="renewal_alert_days">30</field>
+            <field name="required_for">company</field>
+            <field name="alert_channel">email</field>
+        </record>
+
+        <record id="document_type_cartelera_32" model="l10n.ve.document.type">
+            <field name="name">Conformidad de Uso</field>
+            <field name="code">C32</field>
+            <field name="institution_id" ref="institution_demo_municipality"/>
+            <field name="validity_days">365</field>
+            <field name="renewal_alert_days">30</field>
+            <field name="required_for">company</field>
+            <field name="alert_channel">email</field>
+        </record>
+
+        <record id="document_type_cartelera_33" model="l10n.ve.document.type">
+            <field name="name">Último Planilla y Recibo de Pago Impuesto Municipal ISAE</field>
+            <field name="code">C33</field>
+            <field name="institution_id" ref="institution_demo_municipality"/>
+            <field name="validity_days">365</field>
+            <field name="renewal_alert_days">30</field>
+            <field name="required_for">company</field>
+            <field name="alert_channel">email</field>
+        </record>
+
+        <record id="document_type_cartelera_34" model="l10n.ve.document.type">
+            <field name="name">Último Pago Impuesto de Inmueble</field>
+            <field name="code">C34</field>
+            <field name="institution_id" ref="institution_demo_municipality"/>
+            <field name="validity_days">365</field>
+            <field name="renewal_alert_days">30</field>
+            <field name="required_for">company</field>
+            <field name="alert_channel">email</field>
+        </record>
+
+        <record id="document_type_cartelera_35" model="l10n.ve.document.type">
+            <field name="name">Último Planilla y recibo de Pago Aseo</field>
+            <field name="code">C35</field>
+            <field name="institution_id" ref="institution_demo_municipality"/>
+            <field name="validity_days">365</field>
+            <field name="renewal_alert_days">30</field>
+            <field name="required_for">company</field>
+            <field name="alert_channel">email</field>
+        </record>
+
+        <record id="document_type_cartelera_36" model="l10n.ve.document.type">
+            <field name="name">Permiso de Publicidad</field>
+            <field name="code">C36</field>
+            <field name="institution_id" ref="institution_demo_municipality"/>
+            <field name="validity_days">365</field>
+            <field name="renewal_alert_days">30</field>
+            <field name="required_for">company</field>
+            <field name="alert_channel">email</field>
+        </record>
+
+    </data>
+</odoo>

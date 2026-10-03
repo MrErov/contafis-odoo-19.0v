@@ -1,0 +1,51 @@
+<odoo>
+    <data noupdate="1">
+        <record id="institution_demo_seniat" model="l10n.ve.institution">
+            <field name="name">SENIAT</field>
+            <field name="type">seniat</field>
+            <field name="rif">J-00002955-5</field>
+            <field name="portal_url">https://www.seniat.gob.ve</field>
+            <field name="contact_info">Servicio Nacional Integrado de Administración Aduanera y Tributaria</field>
+        </record>
+
+        <record id="institution_demo_ivss" model="l10n.ve.institution">
+            <field name="name">IVSS</field>
+            <field name="type">ivss</field>
+            <field name="rif">J-00008705-7</field>
+            <field name="portal_url">https://www.ivss.gob.ve</field>
+            <field name="contact_info">Instituto Venezolano de los Seguros Sociales</field>
+        </record>
+
+        <record id="institution_demo_inces" model="l10n.ve.institution">
+            <field name="name">INCES</field>
+            <field name="type">inces</field>
+            <field name="rif">J-00011001-0</field>
+            <field name="portal_url">https://www.inces.gob.ve</field>
+            <field name="contact_info">Instituto Nacional de Capacitación y Educación Socialista</field>
+        </record>
+
+        <record id="institution_demo_banavih" model="l10n.ve.institution">
+            <field name="name">BANAVIH</field>
+            <field name="type">banavih</field>
+            <field name="rif">J-00083297-0</field>
+            <field name="portal_url">https://www.banavih.gob.ve</field>
+            <field name="contact_info">Banco Nacional de Vivienda y Hábitat</field>
+        </record>
+
+        <record id="institution_demo_mintra" model="l10n.ve.institution">
+            <field name="name">MINTRA</field>
+            <field name="type">mintra</field>
+            <field name="rif">J-00000000-2</field>
+            <field name="portal_url">https://www.mintra.gob.ve</field>
+            <field name="contact_info">Ministerio del Poder Popular para el Proceso Social de Trabajo</field>
+        </record>
+
+        <record id="institution_demo_municipality" model="l10n.ve.institution">
+            <field name="name">Alcaldía</field>
+            <field name="type">municipal</field>
+            <field name="rif">J-00000000-1</field>
+            <field name="portal_url"></field>
+            <field name="contact_info">Alcaldía correspondiente al municipio del cliente</field>
+        </record>
+    </data>
+</odoo>
