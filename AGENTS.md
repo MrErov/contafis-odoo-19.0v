@@ -186,3 +186,21 @@ Reportar al usuario:
 - Añadir al FINAL del archivo, no en medio.
 - Asegurar nueva línea final (`\n` al terminar).
 - NO modificar la sección Anti-patterns existente.
+
+## Bug conocido: menús y caché
+
+Si tras `-u l10n_ve_compliance_manager` un menuitem no aparece en la UI:
+
+1. NO teories. Verifica primero con:
+   docker compose run --rm web odoo shell -d contea --no-http << 'EOF'
+   import json
+   menus = env['ir.ui.menu'].with_user(env.ref('base.user_admin')).load_menus(False)
+   print("Menú en payload:", 'Importar desde Excel' in json.dumps(menus, default=str))
+   EOF
+
+2. Si el menú SÍ está en el payload → NO es bug de código:
+   - docker compose restart web
+   - Cerrar navegador completamente + incógnito nueva
+
+3. NO intentes: quitar groups=, editar XML, reinstall, limpiar assets.
+   Ninguna de esas teorías arregla el problema real.
