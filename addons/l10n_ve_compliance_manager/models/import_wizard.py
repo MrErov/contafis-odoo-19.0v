@@ -22,7 +22,9 @@ class ImportWizard(models.TransientModel):
         IMPORT_TYPES, string='Tipo de Importación', required=True,
         default='obligation'
     )
-    file = fields.Binary(string='Archivo Excel', required=True)
+    # No `required=True`: el wizard debe poder crearse para descargar la
+    # plantilla sin archivo. `action_load_file`/`action_preview` lo validan.
+    file = fields.Binary(string='Archivo Excel')
     filename = fields.Char(string='Nombre de Archivo')
     template_file = fields.Binary(string='Plantilla')
     mapping_ids = fields.One2many(
