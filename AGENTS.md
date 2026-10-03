@@ -87,9 +87,9 @@ con la herramienta `edit`. No crees un script intermedio.
 ### 2. Loops de "arreglar → fallar → arreglar"
 
 Si intentas arreglar algo y sigue fallando después de 2 intentos:
-- 🛑 DETENTE inmediatamente.
-- 📋 Reporta al usuario: qué intentaste, qué falló, qué archivos tocaste.
-- 🔄 Espera instrucciones. NO sigas intentando.
+-  DETENTE inmediatamente.
+-  Reporta al usuario: qué intentaste, qué falló, qué archivos tocaste.
+-  Espera instrucciones. NO sigas intentando.
 
 Continuar en un loop genera:
 - Scripts temporales basura.
