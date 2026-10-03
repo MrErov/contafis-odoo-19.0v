@@ -121,6 +121,18 @@ commitear. Se perdió trabajo real por esta razón en Fase 2B.
 - ❌ NO modificar `models/` si la tarea es solo de tests.
 - 🛑 Si un comando falla, DETENERSE. NO crear variantes (`test_output2.txt`, etc.).
 
+### 6. Diagnóstico sin archivos temporales
+
+Cuando necesites diagnosticar un problema en Odoo:
+- ✅ USA `docker compose run --rm web odoo shell -d <db> --no-http << 'EOF' ... EOF`
+  (stdin, sin archivos)
+- ✅ USA `docker compose exec db psql -U odoo -d <db> -c "..."`
+- ❌ NO crees archivos `.py` de diagnóstico (`check_*.py`, `diag_*.py`, `deep_*.py`)
+- ❌ NO crees archivos `fix_*.py` ni `install_*.py`
+- Si te encuentras creando un archivo de diagnóstico, DETENTE. Usa shell inline.
+
+Motivo: en una sesión se crearon 14 archivos temporales contaminando el repo.
+
 ## Workflow de sub-tareas
 
 Para tareas grandes (>100 líneas), dividir en sub-tareas de máximo 1-2 horas.
