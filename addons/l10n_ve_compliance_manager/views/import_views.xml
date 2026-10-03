@@ -288,6 +288,7 @@
                   name="Importar desde Excel"
                   parent="menu_l10n_ve_compliance_root"
                   sequence="60"
-                  action="action_l10n_ve_import_wizard"/>
+                  action="action_l10n_ve_import_wizard"
+                  groups="account.group_account_user"/>
     </data>
 </odoo>
