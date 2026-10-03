@@ -204,3 +204,43 @@ Si tras `-u l10n_ve_compliance_manager` un menuitem no aparece en la UI:
 
 3. NO intentes: quitar groups=, editar XML, reinstall, limpiar assets.
    Ninguna de esas teorías arregla el problema real.
+
+## Diagnóstico real (2026-10-03): menú no visible en navegador
+
+Regla de oro: si `load_menus`/`load_web_menus` en el ORM incluye el menuitem
+con su `action_id` correcto, el backend está bien. NO tocar XML, groups ni
+vistas. El fallo está en la capa navegador ↔ servidor. Orden de comprobación:
+
+1. **¿Quién sirve el puerto?** `netstat -ano | findstr :8090`. Si el PID es
+   `wslrelay`, hay un Odoo dev-server corriendo DENTRO de WSL que compite con
+   el contenedor. Matarlo: `wsl.exe -e bash -lc "pkill -f 'odoo --dev'"`.
+   Verificación: petición al host con User-Agent único
+   (`curl -A DSH-PROBE-<id> http://localhost:8090/web/login`) y confirmar que
+   esa UA aparece en `docker compose logs web`. Si NO aparece, el navegador
+   está hablando con OTRO servidor, no con el contenedor.
+
+2. **Service worker:** Odoo registra `/web/service-worker.js` (scope `/odoo`,
+   caché `odoo-sw-cache`) y puede cachear `/web/webclient/load_menus`. Un SW
+   de un servidor fantasma sirve menús viejos incluso con el backend correcto.
+   Limpiar desde la consola del navegador:
+   ```js
+   (async () => {
+     for (const r of await navigator.serviceWorker.getRegistrations()) await r.unregister();
+     for (const k of await caches.keys()) await caches.delete(k);
+     localStorage.clear(); sessionStorage.clear();
+     location.href = "/web";
+   })()
+   ```
+
+3. **localStorage:** `menu_service.js` cachea los menús en
+   `localStorage["webclient_menus"]` validado contra
+   `localStorage["webclient_menus_version"]` vs `session.registry_hash`.
+   Si el hash viejo persiste (por SW o servidor fantasma), el cliente se
+   valida contra sí mismo y renderiza la caché. Un
+   `localStorage.getItem("webclient_menus")` con menos nodos que el servidor
+   confirma este caso.
+
+4. **Nunca** diagnosticar este bug editando el módulo: el conteo oficial del
+   payload lo dan `load_web_menus` por HTTP autenticado (73 nodos con la BD
+   reparada) y por ORM. Cualquier discrepancia entre el navegador y esos dos
+   números es problema de entorno (WSL/service worker/localStorage).
