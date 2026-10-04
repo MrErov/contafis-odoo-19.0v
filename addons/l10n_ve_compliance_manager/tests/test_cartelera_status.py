@@ -11,6 +11,8 @@ class TestCarteleraStatus(TransactionCase):
 
     def setUp(self):
         super().setUp()
+        # Limpiar snapshots de tests previos para asegurar idempotencia
+        self.env['l10n.ve.cartelera.status'].search([]).unlink()
         self.Client = self.env['l10n.ve.compliance.client']
         self.DocType = self.env['l10n.ve.document.type']
         self.Document = self.env['l10n.ve.document']
@@ -313,6 +315,10 @@ class TestCarteleraStatus(TransactionCase):
         snapshots = self.Status.generate_snapshot_all_clients(
             self.test_year, self.test_month
         )
+
+        # Filtrar solo los dos clientes creados en este test
+        test_client_ids = (self.client | client2).ids
+        snapshots = snapshots.filtered(lambda s: s.client_id.id in test_client_ids)
 
         # 36 tipos * 2 clientes = 72
         self.assertEqual(len(snapshots), 72)
