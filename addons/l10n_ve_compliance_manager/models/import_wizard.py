@@ -16,6 +16,7 @@ class ImportWizard(models.TransientModel):
         ('document', 'Documentos'),
         ('client', 'Clientes'),
         ('retention', 'Retenciones'),
+        ('cartelera', 'Cartelera Fiscal'),
     ]
 
     import_type = fields.Selection(
@@ -56,6 +57,18 @@ class ImportWizard(models.TransientModel):
         ('strict', 'Estricto (rollback total en error)'),
         ('lax', 'Flexible (continúa en error, default)'),
     ], string='Modo', default='lax')
+    cartelera_year = fields.Integer(
+        string='Año cartelera',
+        default=lambda self: fields.Date.today().year,
+        help='Año del período a importar',
+    )
+    cartelera_month = fields.Selection([
+        ('1', 'Enero'), ('2', 'Febrero'), ('3', 'Marzo'),
+        ('4', 'Abril'), ('5', 'Mayo'), ('6', 'Junio'),
+        ('7', 'Julio'), ('8', 'Agosto'), ('9', 'Septiembre'),
+        ('10', 'Octubre'), ('11', 'Noviembre'), ('12', 'Diciembre'),
+    ], string='Mes cartelera',
+       default=lambda self: str(fields.Date.today().month))
     attachment_id = fields.Many2one(
         'ir.attachment', string='Log de Importación', readonly=True
     )
@@ -190,11 +203,139 @@ class ImportWizard(models.TransientModel):
         wb.save(output)
         return output.getvalue()
 
-    def action_load_file(self):
-        """Carga el archivo Excel, lee headers y crea mapeo automático."""
+    def _parse_cartelera_excel(self):
+        """
+        Parsea el Excel de cartelera fiscal para el mes/año seleccionados.
+        
+        Estructura esperada:
+        - Hoja según mes: enero, febrero, ..., diciembre (minúsculas)
+        - Fila 3: 36 headers columnas E..AN (índices 4..39 0-based)
+        - Filas 4+: una por empresa
+          - Col B (índice 1): RIF
+          - Col C (índice 2): Nombre empresa
+          - Cols E..AN (índices 4..39): 36 valores True/False para C01..C36
+        
+        Crea líneas l10n.ve.import.line con data = {
+            'rif': rif, 'name': name, 'year': year, 'month': month, 'statuses': statuses
+        }
+        """
         self.ensure_one()
         if not self.file:
             raise UserError(_('Debe subir un archivo Excel.'))
+        
+        import base64
+        import openpyxl
+        from io import BytesIO
+        
+        file_data = base64.b64decode(self.file)
+        wb = openpyxl.load_workbook(BytesIO(file_data), read_only=True, data_only=True)
+        
+        # Mapear mes a nombre de hoja
+        month_names = {
+            1: 'enero', 2: 'febrero', 3: 'marzo', 4: 'abril',
+            5: 'mayo', 6: 'junio', 7: 'julio', 8: 'agosto',
+            9: 'septiembre', 10: 'octubre', 11: 'noviembre', 12: 'diciembre'
+        }
+        month_int = int(self.cartelera_month)
+        sheet_name = month_names.get(month_int)
+        
+        if sheet_name not in wb.sheetnames:
+            raise UserError(_(
+                "La hoja '%s' no existe en el archivo. "
+                "Verifique que el archivo tiene 12 hojas: enero, febrero, ..., diciembre."
+            ) % sheet_name)
+        
+        ws = wb[sheet_name]
+        
+        # Leer fila 3 para headers (índices 4..39 = columnas E..AN)
+        # En read_only, iter_rows min_row=3, max_row=3, min_col=5, max_col=40
+        # values_only=True devuelve tuplas de valores, no objetos cell
+        headers = []
+        for row in ws.iter_rows(min_row=3, max_row=3, min_col=5, max_col=40, values_only=True):
+            for val in row:
+                headers.append(str(val) if val else '')
+        
+        if len(headers) != 36:
+            raise UserError(_(
+                "Se esperaban 36 columnas de documentos (E..AN) en la fila 3, "
+                "se encontraron %d. Verifique la estructura del archivo."
+            ) % len(headers))
+        
+        # Códigos C01..C36 en orden posicional
+        codes = [f'C{i:02d}' for i in range(1, 37)]
+        
+        # Leer filas 4+ (empresas)
+        row_count = 0
+        for row in ws.iter_rows(min_row=4, values_only=True):
+            if not row or len(row) < 3:
+                continue
+            
+            rif = row[1] if len(row) > 1 else None  # Columna B (índice 1)
+            name = row[2] if len(row) > 2 else None  # Columna C (índice 2)
+            
+            # Parar si RIF y nombre están vacíos
+            if not rif and not name:
+                break
+            
+            if not rif:
+                continue  # Saltar filas sin RIF
+            
+            # Normalizar RIF: si viene sin guiones (J000000001), formatear
+            rif_str = str(rif).strip().upper().replace('.', '').replace(' ', '')
+            if '-' not in rif_str and len(rif_str) >= 9:
+                # Formato J000000001 -> J-00000001-? (no podemos calcular DV sin el original)
+                # Dejamos como viene si no tiene guiones
+                pass
+            
+            # Leer 36 valores de estado (columnas E..AN = índices 4..39)
+            statuses = {}
+            for i, code in enumerate(codes):
+                col_idx = 4 + i  # 0-based: E=4, F=5, ..., AN=39
+                cell_value = row[col_idx] if col_idx < len(row) else None
+                # True si valor es True, '1', 'true', 'sí', 'si', 'yes', 'verdadero'
+                # False si vacío, False, '0', 'false', 'no', 'falso'
+                if cell_value is None:
+                    statuses[code] = False
+                elif isinstance(cell_value, bool):
+                    statuses[code] = cell_value
+                else:
+                    val_str = str(cell_value).strip().lower()
+                    statuses[code] = val_str in ('1', 'true', 'verdadero', 'si', 'sí', 'yes', 'x')
+            
+            # Crear línea de importación
+            self.env['l10n.ve.import.line'].create({
+                'wizard_id': self.id,
+                'row_index': row_count + 1,
+                'data': {
+                    'rif': rif_str,
+                    'name': str(name).strip() if name else '',
+                    'year': self.cartelera_year,
+                    'month': self.cartelera_month,
+                    'statuses': statuses,
+                },
+                'state': 'draft',
+            })
+            row_count += 1
+        
+        if row_count == 0:
+            raise UserError(_(
+                "No se encontraron empresas válidas en la hoja '%s'. "
+                "Verifique que la columna B (RIF) y C (Nombre) tengan datos."
+            ) % sheet_name)
+        
+        return row_count
+
+    def action_load_file(self):
+        """Carga el archivo Excel, lee headers y crea mapeo automático.
+        
+        Para import_type='cartelera', usa parser específico y salta a preview directamente.
+        """
+        self.ensure_one()
+        if not self.file:
+            raise UserError(_('Debe subir un archivo Excel.'))
+
+        if self.import_type == 'cartelera':
+            return self._load_cartelera_file()
 
         import base64
         import openpyxl
@@ -241,6 +382,19 @@ class ImportWizard(models.TransientModel):
 
         # Cambiar estado a mapping
         self.state = 'mapping'
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': 'l10n.ve.import.wizard',
+            'res_id': self.id,
+            'view_mode': 'form',
+            'target': 'new',
+        }
+
+    def _load_cartelera_file(self):
+        """Carga archivo cartelera: parsea directo y va a preview (sin paso mapping)."""
+        self.ensure_one()
+        row_count = self._parse_cartelera_excel()
+        self.state = 'preview'
         return {
             'type': 'ir.actions.act_window',
             'res_model': 'l10n.ve.import.wizard',
@@ -396,8 +550,26 @@ class ImportWizard(models.TransientModel):
         }
 
     def action_preview(self):
-        """Genera preview de las primeras N filas."""
+        """Genera preview de las primeras N filas.
+        
+        Para import_type='cartelera', el preview ya se generó en _load_cartelera_file.
+        """
         self.ensure_one()
+        if self.import_type == 'cartelera':
+            # Preview ya generado, solo verificar que hay líneas
+            if not self.line_ids:
+                raise UserError(_('No hay datos de preview. Cargue el archivo primero.'))
+            if len(self.line_ids) > self.preview_limit:
+                self.preview_exceeded = True
+            self.state = 'preview'
+            return {
+                'type': 'ir.actions.act_window',
+                'res_model': 'l10n.ve.import.wizard',
+                'res_id': self.id,
+                'view_mode': 'form',
+                'target': 'new',
+            }
+
         if not self.file:
             raise UserError(_('Debe subir un archivo Excel.'))
 
@@ -513,7 +685,10 @@ class ImportWizard(models.TransientModel):
         )
         error_fatal = False
         for line in lines:
-            action = self._import_line(line)
+            if self.import_type == 'cartelera':
+                action = self._import_cartelera_line(line)
+            else:
+                action = self._import_line(line)
             if action == 'error' and self.mode == 'strict':
                 error_fatal = True
                 break
@@ -531,14 +706,19 @@ class ImportWizard(models.TransientModel):
         error_count = len(self.line_ids.filtered(lambda l: l.state == 'error'))
         skipped_count = len(self.line_ids.filtered(lambda l: l.state == 'skipped'))
 
-        # Obtener records del log desde record_ids JSON
+        # Obtener records del log desde record_id (Reference field)
         import json
         records_created = []
         for line in self.line_ids.filtered(lambda l: l.state in ('imported', 'updated')):
-            if line.record_ids:
+            if line.record_id:
                 try:
-                    parsed = json.loads(line.record_ids)
-                    records_created.extend(parsed)
+                    # record_id es Reference: "model,id"
+                    model_name, record_id_str = line.record_id.split(',')
+                    records_created.append({
+                        'model': model_name,
+                        'id': int(record_id_str),
+                        'name': line.record_name or '',
+                    })
                 except Exception:
                     pass
 
@@ -662,6 +842,9 @@ class ImportWizard(models.TransientModel):
         Importa UNA línea usando savepoint para rollback granular.
         Retorna 'created' | 'updated' | 'error'.
         """
+        if self.import_type == 'cartelera':
+            return self._import_cartelera_line(line)
+        
         try:
             with self.env.cr.savepoint():
                 # Resolver Many2one según mapping
@@ -678,6 +861,82 @@ class ImportWizard(models.TransientModel):
                     'model_name': model_name,
                 })
                 return action
+        except Exception as e:
+            line.write({'state': 'error', 'error_msg': str(e)[:500]})
+            return 'error'
+
+    def _import_cartelera_line(self, line):
+        """
+        Importa una línea de cartelera fiscal.
+        
+        Crea/actualiza cliente (res.partner + l10n.ve.compliance.client) por RIF
+        y genera snapshot de cartelera via generate_snapshot().
+        
+        Modo strict: si cliente no existe → error.
+        Modo lax: crea cliente si no existe.
+        """
+        try:
+            with self.env.cr.savepoint():
+                data = line.data or {}
+                rif = data.get('rif')
+                name = data.get('name')
+                year = data.get('year')
+                month = data.get('month')
+                statuses = data.get('statuses', {})
+                
+                if not rif:
+                    raise UserError(_('RIF vacío en la fila %d') % line.row_index)
+                if not name:
+                    raise UserError(_('Nombre de empresa vacío en la fila %d') % line.row_index)
+                
+                # Buscar cliente por RIF
+                client = self.env['l10n.ve.compliance.client'].search([
+                    ('rif', '=', rif)
+                ], limit=1)
+                
+                if not client:
+                    # Buscar partner por VAT (res.partner no tiene campo rif, solo vat)
+                    partner = self.env['res.partner'].search([
+                        ('vat', '=', rif)
+                    ], limit=1)
+                    
+                    if not partner:
+                        if self.mode == 'strict':
+                            raise UserError(_(
+                                "Cliente con RIF '%s' no existe. En modo estricto no se crean clientes."
+                            ) % rif)
+                        # Modo lax: crear partner y cliente
+                        partner = self.env['res.partner'].create({
+                            'name': name,
+                            'vat': rif,
+                        })
+                    
+                    # Asegurar company_id (required en compliance.client)
+                    company_id = self.company_id.id or self.env.company.id
+                    
+                    client = self.env['l10n.ve.compliance.client'].create({
+                        'name': name,
+                        'partner_id': partner.id,
+                        'rif': rif,
+                        'company_id': company_id,
+                    })
+                
+                # Generar snapshot de cartelera
+                cartelera_statuses = self.env['l10n.ve.cartelera.status'].generate_snapshot(
+                    client_id=client.id,
+                    year=year,
+                    month=month,
+                    statuses=statuses,
+                )
+                
+                # Actualizar la línea
+                line.write({
+                    'state': 'imported',
+                    'record_id': f"l10n.ve.compliance.client,{client.id}",
+                    'record_name': client.display_name,
+                    'model_name': 'l10n.ve.compliance.client',
+                })
+                return 'created'
         except Exception as e:
             line.write({'state': 'error', 'error_msg': str(e)[:500]})
             return 'error'

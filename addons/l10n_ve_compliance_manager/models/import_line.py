@@ -39,6 +39,7 @@ class ImportLine(models.TransientModel):
             ('l10n.ve.document', 'Documento'),
             ('l10n.ve.compliance.client', 'Cliente Cumplimiento'),
             ('l10n.retention', 'Retención'),
+            ('l10n.ve.cartelera.status', 'Cartelera Status'),
         ]
 
     def _validate_syntax(self):
@@ -293,6 +294,43 @@ class ImportLine(models.TransientModel):
                 dt = fields.Date.to_date(date)
                 if dt > today:
                     errors.append("Regla de negocio: date debe ser <= hoy")
+
+        elif import_type == 'cartelera':
+            # Validar RIF no vacío
+            rif = data.get('rif')
+            if not rif:
+                errors.append("Regla de negocio: rif no puede estar vacío")
+            # Validar year entre 2020 y 2100
+            year = data.get('year')
+            if year is not None:
+                try:
+                    year_int = int(year)
+                    if year_int < 2020 or year_int > 2100:
+                        errors.append("Regla de negocio: year debe estar entre 2020 y 2100")
+                except (ValueError, TypeError):
+                    errors.append("Regla de negocio: year debe ser un entero válido")
+            # Validar month entre '1' y '12'
+            month = data.get('month')
+            if month is not None:
+                try:
+                    month_int = int(month)
+                    if month_int < 1 or month_int > 12:
+                        errors.append("Regla de negocio: month debe estar entre 1 y 12")
+                except (ValueError, TypeError):
+                    errors.append("Regla de negocio: month debe ser un entero válido")
+            # Validar statuses tiene 36 claves C01..C36
+            statuses = data.get('statuses', {})
+            if not isinstance(statuses, dict):
+                errors.append("Regla de negocio: statuses debe ser un diccionario")
+            else:
+                expected_codes = [f'C{i:02d}' for i in range(1, 37)]
+                for code in expected_codes:
+                    if code not in statuses:
+                        errors.append(f"Regla de negocio: statuses debe incluir clave '{code}'")
+                # Validar que no hay claves extra
+                for code in statuses:
+                    if code not in expected_codes:
+                        errors.append(f"Regla de negocio: statuses contiene clave inválida '{code}'")
 
         if errors:
             self.write({

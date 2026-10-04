@@ -59,6 +59,10 @@
                                            required="true"
                                            help="Seleccione un archivo .xlsx"/>
                                     <field name="filename" invisible="1"/>
+                                    <field name="cartelera_year"
+                                           invisible="import_type != 'cartelera'"/>
+                                    <field name="cartelera_month"
+                                           invisible="import_type != 'cartelera'"/>
                                 </group>
                                 <div class="alert alert-info mt-3" role="status">
                                     <strong>Instrucciones:</strong>
