@@ -72,6 +72,11 @@ class ImportWizard(models.TransientModel):
     attachment_id = fields.Many2one(
         'ir.attachment', string='Log de Importación', readonly=True
     )
+    cartelera_unmatched_headers = fields.Char(
+        string='Headers No Reconocidos',
+        readonly=True,
+        help='Columnas del Excel que no coincidieron con ningún tipo de documento'
+    )
 
     # Datos para plantillas por tipo de importación
     @api.model
@@ -203,20 +208,158 @@ class ImportWizard(models.TransientModel):
         wb.save(output)
         return output.getvalue()
 
+    def _detect_cartelera_structure(self, ws):
+        """
+        Detecta dinámicamente la estructura de la hoja de cartelera.
+        
+        Retorna dict con:
+        - header_row: int (1-based)
+        - rif_col: int (0-based)
+        - name_col: int (0-based)
+        - data_start_row: int (1-based)
+        - code_by_col: {col_idx: code}  # solo columnas de documentos válidas
+        - unmatched_headers: list[str]  # headers no reconocidos
+        """
+        # Leer primeras 5 filas para análisis
+        sample_rows = []
+        for row in ws.iter_rows(min_row=1, max_row=5, values_only=True):
+            sample_rows.append([str(v).strip() if v else '' for v in row])
+        
+        if not sample_rows:
+            raise UserError(_('La hoja está vacía.'))
+        
+        # Cargar todos los document_type en orden de código C01..C36
+        doc_types = self.env['l10n.ve.document.type'].search([
+            ('required_for', '=', 'company')
+        ], order='code')
+        # Lista de nombres normalizados en orden de código (para matching posicional)
+        expected_names_norm = [self._normalize(dt.name) for dt in doc_types]
+        expected_codes = [dt.code for dt in doc_types]
+        # Set para matching rápido (aunque hay duplicados, el set pierde duplicados)
+        name_to_code = {self._normalize(dt.name): dt.code for dt in doc_types}
+        
+        # 1. ENCONTRAR FILA DE HEADERS: la que más matches tiene con expected_names_norm
+        best_row = 1
+        best_matches = 0
+        for i, row in enumerate(sample_rows):
+            if not row:
+                continue
+            matches = sum(1 for cell in row 
+                         if cell and self._normalize(cell) in name_to_code)
+            if matches > best_matches:
+                best_matches = matches
+                best_row = i + 1  # 1-based
+        
+        header_row = best_row
+        headers = [str(cell).strip() if cell else '' for cell in sample_rows[header_row - 1]]
+        
+        # 2. ENCONTRAR COLUMNA RIF
+        rif_col = None
+        rif_keywords = {'rif', 'r_i_f_', 'r_i_f'}  # normalizado: rif, r.i.f., r.i.f
+        for idx, h in enumerate(headers):
+            norm = self._normalize(h)
+            if norm in rif_keywords:
+                rif_col = idx
+                break
+        
+        if rif_col is None:
+            # Fallback por mes: enero=Rif en C(2), otros=A(0)
+            month_int = int(self.cartelera_month)
+            rif_col = 2 if month_int == 1 else 0
+        
+        # 3. COLUMNA NOMBRE = RIF + 1
+        name_col = rif_col + 1
+        
+        # 4. MAPEAR COLUMNAS DE DOCUMENTOS POR POSICIÓN
+        # Detectar el rango de columnas de documentos: después de name_col hasta antes de Total/Porcentaje
+        doc_start_col = None
+        doc_end_col = None
+        
+        # Buscar primera columna después de name_col que matchee algún nombre esperado
+        for idx in range(name_col + 1, len(headers)):
+            norm = self._normalize(headers[idx])
+            if norm in name_to_code:
+                doc_start_col = idx
+                break
+        
+        if doc_start_col is None:
+            # Fallback: columna siguiente a name_col
+            doc_start_col = name_col + 1
+        
+        # Buscar columna de Total/Porcentaje
+        for idx in range(doc_start_col, len(headers)):
+            norm = self._normalize(headers[idx])
+            if norm in {'total', 'porcentaje', 'total_porcentaje', 'total%'}:
+                doc_end_col = idx
+                break
+        
+        if doc_end_col is None:
+            doc_end_col = len(headers)
+        
+        # Asignar códigos por posición: C01, C02, ... en orden
+        # Mapeo POSICIONAL C01..C36 (no por nombre).
+        # Justificación: hay nombres duplicados entre document_type
+        # (C13/C18 "Planilla de Inscripción", C15/C23 "Último soporte de Pago")
+        # que colapsarían en un match por nombre.
+        # LIMITACIÓN: si el contador reordena columnas, los códigos se asignan
+        # incorrectamente. Revisar en Fase futura con match híbrido nombre+posición.
+        code_by_col = {}
+        unmatched = []
+        for pos, idx in enumerate(range(doc_start_col, doc_end_col)):
+            if pos < len(expected_codes):
+                code_by_col[idx] = expected_codes[pos]
+            else:
+                # Más columnas de las esperadas (ej. diciembre con 39)
+                h = headers[idx]
+                norm = self._normalize(h)
+                if norm in name_to_code:
+                    code_by_col[idx] = name_to_code[norm]
+                elif h:
+                    unmatched.append(h)
+        
+        # Validación defensiva: detectar al menos 30 columnas de documentos
+        if len(code_by_col) < 30:
+            raise UserError(_(
+                "Solo se detectaron %d columnas de documentos (se esperaban "
+                "al menos 30). Verifica que el Excel tenga los 36 headers de "
+                "la cartelera fiscal."
+            ) % len(code_by_col))
+        
+        # También detectar headers no reconocidos FUERA del rango de documentos
+        for idx, h in enumerate(headers):
+            if idx <= name_col:
+                continue
+            if idx < doc_start_col or idx >= doc_end_col:
+                norm = self._normalize(h)
+                if h and norm not in {'total', 'porcentaje', 'total_porcentaje', 'total%'}:
+                    unmatched.append(h)
+        
+        # 5. PRIMERA FILA DE DATOS = header_row + 1
+        data_start_row = header_row + 1
+        
+        return {
+            'header_row': header_row,
+            'rif_col': rif_col,
+            'name_col': name_col,
+            'data_start_row': data_start_row,
+            'code_by_col': code_by_col,
+            'unmatched_headers': unmatched,
+        }
+
     def _parse_cartelera_excel(self):
         """
         Parsea el Excel de cartelera fiscal para el mes/año seleccionados.
         
-        Estructura esperada:
-        - Hoja según mes: enero, febrero, ..., diciembre (minúsculas)
-        - Fila 3: 36 headers columnas E..AN (índices 4..39 0-based)
-        - Filas 4+: una por empresa
-          - Col B (índice 1): RIF
-          - Col C (índice 2): Nombre empresa
-          - Cols E..AN (índices 4..39): 36 valores True/False para C01..C36
+        Detecta dinámicamente:
+        - Hoja según mes (enero..diciembre)
+        - Fila de headers (busca fila con más coincidencias document_type.name)
+        - Columna RIF (busca header "RIF", "R.I.F.", "R.I.F")
+        - Columna Nombre (RIF + 1)
+        - Rango docs (desde primera columna reconocida hasta antes de "Total"/"Porcentaje")
+        - Mapeo header → code via document_type (normalizado)
         
         Crea líneas l10n.ve.import.line con data = {
-            'rif': rif, 'name': name, 'year': year, 'month': month, 'statuses': statuses
+            'rif': rif, 'name': name, 'year': year, 'month': month, 'statuses': {code: bool}
         }
         """
         self.ensure_one()
@@ -247,31 +390,37 @@ class ImportWizard(models.TransientModel):
         
         ws = wb[sheet_name]
         
-        # Leer fila 3 para headers (índices 4..39 = columnas E..AN)
-        # En read_only, iter_rows min_row=3, max_row=3, min_col=5, max_col=40
-        # values_only=True devuelve tuplas de valores, no objetos cell
-        headers = []
-        for row in ws.iter_rows(min_row=3, max_row=3, min_col=5, max_col=40, values_only=True):
-            for val in row:
-                headers.append(str(val) if val else '')
+        # Detectar estructura dinámicamente
+        structure = self._detect_cartelera_structure(ws)
         
-        if len(headers) != 36:
+        # Guardar headers no reconocidos para mostrar en preview
+        if structure['unmatched_headers']:
+            self.cartelera_unmatched_headers = ', '.join(structure['unmatched_headers'])
+        else:
+            self.cartelera_unmatched_headers = False
+        
+        rif_col = structure['rif_col']
+        name_col = structure['name_col']
+        data_start_row = structure['data_start_row']
+        code_by_col = structure['code_by_col']
+        
+        if not code_by_col:
             raise UserError(_(
-                "Se esperaban 36 columnas de documentos (E..AN) en la fila 3, "
-                "se encontraron %d. Verifique la estructura del archivo."
-            ) % len(headers))
+                "No se detectaron columnas de documentos válidas en la hoja '%s'. "
+                "Verifique que los headers coincidan con los tipos de documento configurados."
+            ) % sheet_name)
         
-        # Códigos C01..C36 en orden posicional
-        codes = [f'C{i:02d}' for i in range(1, 37)]
+        # Límite de seguridad: no iterar más de 500 filas de datos
+        max_data_row = min(ws.max_row or 0, data_start_row + 500)
         
-        # Leer filas 4+ (empresas)
+        # Leer filas de datos
         row_count = 0
-        for row in ws.iter_rows(min_row=4, values_only=True):
-            if not row or len(row) < 3:
+        for row in ws.iter_rows(min_row=data_start_row, max_row=max_data_row, values_only=True):
+            if not row:
                 continue
             
-            rif = row[1] if len(row) > 1 else None  # Columna B (índice 1)
-            name = row[2] if len(row) > 2 else None  # Columna C (índice 2)
+            rif = row[rif_col] if rif_col < len(row) else None
+            name = row[name_col] if name_col < len(row) else None
             
             # Parar si RIF y nombre están vacíos
             if not rif and not name:
@@ -280,20 +429,16 @@ class ImportWizard(models.TransientModel):
             if not rif:
                 continue  # Saltar filas sin RIF
             
-            # Normalizar RIF: si viene sin guiones (J000000001), formatear
+            # Normalizar RIF
             rif_str = str(rif).strip().upper().replace('.', '').replace(' ', '')
             if '-' not in rif_str and len(rif_str) >= 9:
-                # Formato J000000001 -> J-00000001-? (no podemos calcular DV sin el original)
-                # Dejamos como viene si no tiene guiones
+                # Formato J000000001 -> dejar como viene
                 pass
             
-            # Leer 36 valores de estado (columnas E..AN = índices 4..39)
+            # Leer statuses por código mapeado
             statuses = {}
-            for i, code in enumerate(codes):
-                col_idx = 4 + i  # 0-based: E=4, F=5, ..., AN=39
+            for col_idx, code in code_by_col.items():
                 cell_value = row[col_idx] if col_idx < len(row) else None
-                # True si valor es True, '1', 'true', 'sí', 'si', 'yes', 'verdadero'
-                # False si vacío, False, '0', 'false', 'no', 'falso'
                 if cell_value is None:
                     statuses[code] = False
                 elif isinstance(cell_value, bool):
@@ -320,7 +465,7 @@ class ImportWizard(models.TransientModel):
         if row_count == 0:
             raise UserError(_(
                 "No se encontraron empresas válidas en la hoja '%s'. "
-                "Verifique que la columna B (RIF) y C (Nombre) tengan datos."
+                "Verifique que la columna RIF y Nombre tengan datos."
             ) % sheet_name)
         
         return row_count
@@ -404,11 +549,17 @@ class ImportWizard(models.TransientModel):
         }
 
     def _normalize(self, text):
-        """Normaliza texto para comparación (minúsculas, sin espacios, sin acentos)."""
+        """Normaliza texto para comparación (minúsculas, sin espacios, sin acentos, sin HTML)."""
         import unicodedata
+        import re
         if not text:
             return ''
         text = str(text).strip().lower()
+        # Quitar HTML tags (<br>, <b>, etc.)
+        text = re.sub(r'<[^>]+>', ' ', text)
+        # Normalizar espacios múltiples
+        text = ' '.join(text.split())
+        # Quitar acentos
         text = unicodedata.normalize('NFKD', text)
         text = ''.join(c for c in text if not unicodedata.combining(c))
         return text.replace(' ', '_').replace('-', '_')

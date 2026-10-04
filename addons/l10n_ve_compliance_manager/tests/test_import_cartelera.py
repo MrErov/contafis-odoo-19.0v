@@ -38,25 +38,37 @@ class TestImportCartelera(TransactionCase):
         ws.title = sheet_name
         
         # Filas 1-2: encabezados de sección fusionados (IGNORAR)
-        ws.merge_cells('A1:AP1')
+        ws.merge_cells('A1:AN1')
         ws['A1'] = 'CARTELERA FISCAL - SENIAT, IVSS, INCES, BANAVIH, MINTRA, ALCALDÍA'
-        ws.merge_cells('A2:AP2')
+        ws.merge_cells('A2:AN2')
         ws['A2'] = 'Período: Enero 2026'
         
-        # Fila 3: 36 headers en columnas E..AN (índices 5..40 1-based)
-        codes = [f'C{i:02d}' for i in range(1, 37)]
-        for i, code in enumerate(codes):
-            ws.cell(row=3, column=5 + i, value=code)
+        # Obtener tipos de documento en orden de código C01..C36
+        doc_types = self.DocType.search([
+            ('required_for', '=', 'company')
+        ], order='code')
+        codes = [dt.code for dt in doc_types]
+        names = [dt.name for dt in doc_types]
         
-        # Columnas AO, AP: fórmulas COUNTIF y % (IGNORAR)
+        # Fila 3: headers con NOMBRES de documentos (no códigos)
+        # Enero: RIF en C(3), Nombre en D(4), Docs en E..AN(5..40)
+        ws.cell(row=3, column=1, value='Item')
+        ws.cell(row=3, column=2, value='Otro')
+        ws.cell(row=3, column=3, value='RIF')
+        ws.cell(row=3, column=4, value='Empresa')
+        for i, name in enumerate(names):
+            ws.cell(row=3, column=5 + i, value=name)
+        
+        # Columnas AO, AP: Total y % (IGNORAR)
         ws.cell(row=3, column=41, value='Total')
         ws.cell(row=3, column=42, value='%')
         
         # Filas 4+: datos de empresas
         for row_idx, row_data in enumerate(rows_data, 4):
-            ws.cell(row=row_idx, column=2, value=row_data['rif'])  # Col B
-            ws.cell(row=row_idx, column=3, value=row_data['name'])  # Col C
-            ws.cell(row=row_idx, column=4, value='')  # Col D: Extras
+            ws.cell(row=row_idx, column=3, value=row_data['rif'])  # Col C
+            ws.cell(row=row_idx, column=4, value=row_data['name'])  # Col D
+            ws.cell(row=row_idx, column=2, value=row_idx - 3)  # Col B: Item
+            ws.cell(row=row_idx, column=1, value='')  # Col A
             
             statuses = row_data.get('statuses', {})
             for i, code in enumerate(codes):

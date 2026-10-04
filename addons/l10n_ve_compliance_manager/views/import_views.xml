@@ -104,6 +104,14 @@
                                     <strong>Vista previa limitada a
                                     <field name="preview_limit" class="oe_inline"/> filas.</strong>
                                 </div>
+                                <div class="alert alert-warning mt-2" role="alert"
+                                     invisible="not cartelera_unmatched_headers">
+                                    <i class="fa fa-exclamation-triangle"/>
+                                    <strong>Headers no reconocidos:</strong>
+                                    <span class="ms-2"><field name="cartelera_unmatched_headers" readonly="1"/></span>
+                                    <br/>
+                                    <small>Se ignoraron <span class="text-danger">N</span> columnas que no coinciden con tipos de documento. Verifique el Excel.</small>
+                                </div>
                                 <div class="mb-3">
                                     <button name="action_validate_syntax" string="Validar Sintaxis"
                                             type="object" class="btn-primary"/>
