@@ -30,6 +30,10 @@
                             string="Imprimir Reporte"
                             class="btn-primary"
                             icon="fa-print"/>
+                    <button name="action_open_cartelera_gaps" type="object"
+                            string="Ver Brechas Cartelera"
+                            icon="fa-exclamation-triangle"
+                            class="btn-secondary"/>
                 </header>
                 <sheet>
                     <div class="oe_title">

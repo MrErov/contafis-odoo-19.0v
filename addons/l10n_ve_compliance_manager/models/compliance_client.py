@@ -113,3 +113,15 @@ class ComplianceClient(models.Model):
                     lambda alert: alert.state == 'pending'
                 )
             )
+
+    def action_open_cartelera_gaps(self):
+        """Abrir vista de brechas de cartelera (state='missing') para este cliente."""
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Brechas Cartelera',
+            'res_model': 'l10n.ve.cartelera.status',
+            'view_mode': 'list,form',
+            'domain': [('client_id', '=', self.id), ('state', '=', 'missing')],
+            'context': {'default_client_id': self.id},
+        }

@@ -319,3 +319,48 @@ class TestCarteleraStatus(TransactionCase):
         client_ids = snapshots.mapped('client_id.id')
         self.assertIn(self.client.id, client_ids)
         self.assertIn(client2.id, client_ids)
+
+    def test_action_open_cartelera_gaps(self):
+        """action_open_cartelera_gaps devuelve act_window con domain correcto."""
+        # Usar cliente nuevo para aislar test
+        partner_new = self.env['res.partner'].create({
+            'name': 'Cliente Gaps',
+            'vat': 'J-88888888-8',
+        })
+        client_new = self.Client.create({
+            'name': 'Cliente Gaps',
+            'partner_id': partner_new.id,
+            'company_id': self.env.company.id,
+            'rif': 'J-88888888-8',
+        })
+
+        # Crear algunos snapshots missing y valid
+        self.Status.create({
+            'client_id': client_new.id,
+            'year': self.test_year,
+            'month': self.test_month,
+            'document_type_id': self.type_c01.id,
+            'state': 'missing',
+        })
+        self.Status.create({
+            'client_id': client_new.id,
+            'year': self.test_year,
+            'month': self.test_month,
+            'document_type_id': self.type_c05.id,
+            'state': 'valid',
+        })
+        self.Status.create({
+            'client_id': client_new.id,
+            'year': self.test_year,
+            'month': self.test_month,
+            'document_type_id': self.type_c06.id,
+            'state': 'missing',
+        })
+
+        action = client_new.action_open_cartelera_gaps()
+
+        self.assertEqual(action['type'], 'ir.actions.act_window')
+        self.assertEqual(action['res_model'], 'l10n.ve.cartelera.status')
+        self.assertEqual(action['view_mode'], 'list,form')
+        self.assertEqual(action['domain'], [('client_id', '=', client_new.id), ('state', '=', 'missing')])
+        self.assertEqual(action['context'], {'default_client_id': client_new.id})

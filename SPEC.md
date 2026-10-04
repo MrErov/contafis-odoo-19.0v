@@ -23,8 +23,8 @@ para contadores en Venezuela. Multi-cliente (el contador gestiona varias empresa
 6. **[06-importacion-excel.md](specs/06-importacion-excel.md)** — Wizard de
    importación masiva desde Excel (obligaciones, documentos, clientes,
    retenciones) con validación en 3 niveles y upsert
-7. **07-cartelera-excel.md** — Importación de la cartelera fiscal desde
-   Excel mensual (36 documentos, snapshot por cliente/mes). EN DESARROLLO.
+7. **[07-cartelera-excel.md](specs/07-cartelera-excel.md)** — Importación de la cartelera fiscal desde
+    Excel mensual (36 documentos, snapshot por cliente/mes)
 
 ## Modelos Principales (resumen)
 - `l10n.ve.compliance.client` — Cliente multi-empresa, score, status, alertas
@@ -60,11 +60,11 @@ para contadores en Venezuela. Multi-cliente (el contador gestiona varias empresa
 - ✅ 2B.2: `_validate_business` (validación de negocio)
 - ✅ 2B.3: `action_import` + `_upsert_record` + savepoints
 
-### Fase A-D: Cartelera Fiscal Excel (EN CURSO)
+### Fase A-D: Cartelera Fiscal Excel (COMPLETADA)
 - ✅ A: 36 tipos de documento (C01-C36) + institución MINTRA
-- ⬜ B: Modelo `cartelera.status` + `document_score`
-- ⬜ C: Parser + import (rama `cartelera` del wizard)
-- ⬜ D: Vista de brechas + spec 07 + tests
+- ✅ B: Modelo `cartelera.status` + `document_score`
+- ✅ C: Parser + import (rama `cartelera` del wizard)
+- ✅ D: Vista de brechas + spec 07 + tests
 
 ### Trabajo Futuro
 - ⬜ Importación de asientos contables (account.move)

@@ -3,7 +3,12 @@
         <field name="name">l10n.ve.cartelera.status.list</field>
         <field name="model">l10n.ve.cartelera.status</field>
         <field name="arch" type="xml">
-            <list string="Snapshots Cartelera" multi_edit="0">
+            <list string="Snapshots Cartelera" multi_edit="0"
+                  decoration-danger="state == 'missing'"
+                  decoration-warning="state == 'expired'"
+                  decoration-success="state == 'valid'"
+                  decoration-muted="state == 'rejected'"
+                  decoration-info="state == 'pending'">
                 <field name="client_id"/>
                 <field name="year"/>
                 <field name="month"/>
