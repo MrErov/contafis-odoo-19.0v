@@ -20,6 +20,11 @@ para contadores en Venezuela. Multi-cliente (el contador gestiona varias empresa
 3. **[03-cartelera-fiscal.md](specs/03-cartelera-fiscal.md)** — Documentos legales: vigencia, renovación, alertas expiración/faltantes
 4. **[04-retenciones.md](specs/04-retenciones.md)** — Retenciones IVA/ISLR/IGTF en facturas proveedor + extensión account.move
 5. **[05-dashboard-reportes.md](specs/05-dashboard-reportes.md)** — Dashboard contador (kanban semáforos, score, PDF)
+6. **[06-importacion-excel.md](specs/06-importacion-excel.md)** — Wizard de
+   importación masiva desde Excel (obligaciones, documentos, clientes,
+   retenciones) con validación en 3 niveles y upsert
+7. **07-cartelera-excel.md** — Importación de la cartelera fiscal desde
+   Excel mensual (36 documentos, snapshot por cliente/mes). EN DESARROLLO.
 
 ## Modelos Principales (resumen)
 - `l10n.ve.compliance.client` — Cliente multi-empresa, score, status, alertas
@@ -29,22 +34,49 @@ para contadores en Venezuela. Multi-cliente (el contador gestiona varias empresa
 - `l10n.ve.document.type` / `l10n.ve.document` — Cartelera fiscal
 - `l10n.ve.alert` — Notificaciones multi-tipo, multi-canal
 - `l10n.retention` — Comprobante retención (secuencia RET-YYYY-NNNN)
+- `l10n.ve.import.wizard` / `l10n.ve.import.line` / `l10n.ve.import.mapping`
+  / `l10n.ve.import.log` — Wizard de importación Excel (4 modelos)
+- `l10n.ve.cartelera.status` — Snapshot mensual de cartelera fiscal
+  (EN DESARROLLO, Fase B)
 
 ## Extensiones Core
 - `account.move`: `retention_ids`, `retention_amount`, `action_generate_retention()` (solo `in_invoice`)
 - `res.partner`: `compliance_client_ids`, `compliance_status`, `document_ids`
 
-## Roadmap (Estado: Fase 7 completada)
+## Roadmap
+
+### Fases 1-7: Módulo base (COMPLETADAS)
 1. ✅ Scaffold módulo + modelos + security
 2. ✅ Vistas list/form/kanban de cada modelo
 3. ✅ Cálculo de vencimientos + cron
 4. ✅ Sistema de alertas (email + wa.me)
 5. ✅ Dashboard contador + reportes PDF
 6. ✅ Retenciones + account.move
-7. ✅ Datos demo + tests (5/5 passing)
+7. ✅ Datos demo + tests
 
-## Próximos Pasos (Portafolio / SDD)
-- Refactor docs → specs/ (completado)
-- README.md, CHANGELOG.md, LICENSE (LGPL-3), CONTRIBUTING.md
-- Capturas pantalla en docs/screenshots/
-- Topics GitHub + skills mart337i/odoo-skills + MCP Odoo
+### Fase 2A-2B: Wizard de importación Excel (COMPLETADA)
+- ✅ 2A: Parser de números VE + validación RIF módulo 11
+- ✅ 2B.1: `_validate_reference` (validación referencial)
+- ✅ 2B.2: `_validate_business` (validación de negocio)
+- ✅ 2B.3: `action_import` + `_upsert_record` + savepoints
+
+### Fase A-D: Cartelera Fiscal Excel (EN CURSO)
+- ✅ A: 36 tipos de documento (C01-C36) + institución MINTRA
+- ⬜ B: Modelo `cartelera.status` + `document_score`
+- ⬜ C: Parser + import (rama `cartelera` del wizard)
+- ⬜ D: Vista de brechas + spec 07 + tests
+
+### Trabajo Futuro
+- ⬜ Importación de asientos contables (account.move)
+- ⬜ Integración MCP Odoo (mart337i/odoo-dev-mcp)
+- ⬜ Conciliación ISLR (nueva spec 08)
+- ⬜ Libro de Compras/Ventas (nueva spec 09)
+
+## Estado del Portafolio
+
+- ✅ README.md, CHANGELOG.md, LICENSE (LGPL-3), CONTRIBUTING.md
+- ✅ Metodología SDD (AGENTS.md, docs/specs/, opencode.json)
+- ✅ 35 tests pasando
+- ✅ Comandos OpenCode en `.opencode/commands/`
+- ⬜ Capturas de pantalla en docs/screenshots/
+- ⬜ Topics GitHub
