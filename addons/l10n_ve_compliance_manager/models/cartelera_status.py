@@ -43,6 +43,15 @@ class CarteleraStatus(models.Model):
         readonly=True,
     )
     notes = fields.Text(string='Notas')
+    evidence_ids = fields.One2many(
+        'l10n.ve.cartelera.evidence',
+        'cartelera_status_id',
+        string='Evidencias',
+    )
+    evidence_count = fields.Integer(
+        string='Nº de evidencias',
+        compute='_compute_evidence_count',
+    )
 
     _unique_client_year_month_type = models.Constraint(
         'unique(client_id, year, month, document_type_id)',
@@ -179,3 +188,31 @@ class CarteleraStatus(models.Model):
         year = prev_month.year
         month = str(prev_month.month)
         self.generate_snapshot_all_clients(year, month)
+
+    @api.depends('evidence_ids.state')
+    def _compute_evidence_count(self):
+        for rec in self:
+            rec.evidence_count = len(rec.evidence_ids)
+
+    def _recompute_status_from_evidence(self):
+        """
+        Recalcula el estado del snapshot basado en las evidencias asociadas.
+
+        Reglas:
+        - Si hay al menos una evidencia 'accepted' → state = 'valid'
+        - Elif hay al menos una evidencia 'pending' → state = 'pending'
+        - Elif hay evidencias (todas 'rejected') → state = 'rejected'
+        - Si NO hay evidencias → NO TOCAR el estado (puede ser 'missing' original)
+        """
+        for status in self:
+            evidence_states = status.evidence_ids.mapped('state')
+            if not evidence_states:
+                # Sin evidencias: no tocar el estado (puede ser 'missing' del cron)
+                continue
+            if 'accepted' in evidence_states:
+                status.state = 'valid'
+            elif 'pending' in evidence_states:
+                status.state = 'pending'
+            else:
+                # Solo rejected
+                status.state = 'rejected'

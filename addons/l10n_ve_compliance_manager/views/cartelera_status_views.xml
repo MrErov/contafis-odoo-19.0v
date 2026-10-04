@@ -25,6 +25,14 @@
         <field name="model">l10n.ve.cartelera.status</field>
         <field name="arch" type="xml">
             <form string="Snapshot Cartelera" create="0" edit="0">
+                <header>
+                    <button name="%(action_l10n_ve_cartelera_evidence_wizard)d"
+                            string="Subir Evidencia"
+                            type="action"
+                            class="btn-primary"
+                            context="{'default_cartelera_status_id': id}"
+                            invisible="state == 'valid'"/>
+                </header>
                 <sheet>
                     <group>
                         <group>
@@ -42,6 +50,8 @@
                             <field name="expiry_date" readonly="1"/>
                             <field name="document_id" readonly="1"/>
                             <field name="date_generated" readonly="1"/>
+                            <field name="evidence_count" widget="statinfo"
+                                   string="Evidencias"/>
                         </group>
                     </group>
                     <group string="Notas">

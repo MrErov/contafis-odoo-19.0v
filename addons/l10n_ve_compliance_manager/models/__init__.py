@@ -14,3 +14,5 @@ from . import import_log
 from . import account_move
 from . import res_partner
 from . import cartelera_status
+from . import cartelera_evidence
+from . import cartelera_evidence_wizard

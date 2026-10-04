@@ -203,15 +203,16 @@ class TestCarteleraStatus(TransactionCase):
             'rif': 'J-11111111-1',
         })
 
-        # Usar año/mes diferente
-        test_year = 2020
+        # Usar un tipo de documento diferente a los otros tests (C12 en vez de C01)
+        type_c12 = self.DocType.search([('code', '=', 'C12')], limit=1)
+        test_year = 1900
         test_month = '1'
 
         self.Status.create({
             'client_id': client_new.id,
             'year': test_year,
             'month': test_month,
-            'document_type_id': self.type_c01.id,
+            'document_type_id': type_c12.id,
             'state': 'valid',
         })
 
@@ -220,7 +221,7 @@ class TestCarteleraStatus(TransactionCase):
                 'client_id': client_new.id,
                 'year': test_year,
                 'month': test_month,
-                'document_type_id': self.type_c01.id,
+                'document_type_id': type_c12.id,
                 'state': 'missing',
             })
 

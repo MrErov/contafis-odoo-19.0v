@@ -35,3 +35,8 @@ access_l10n_ve_import_line_manager,l10n.ve.import.line.manager,model_l10n_ve_imp
 access_l10n_ve_cartelera_status_user,l10n.ve.cartelera.status.user,model_l10n_ve_cartelera_status,account.group_account_user,1,0,0,0
 access_l10n_ve_cartelera_status_manager,l10n.ve.cartelera.status.manager,model_l10n_ve_cartelera_status,account.group_account_manager,1,1,1,1
 access_l10n_ve_cartelera_status_accountant,l10n.ve.cartelera.status.accountant,model_l10n_ve_cartelera_status,l10n_ve_compliance_accountant,1,1,1,1
+access_l10n_ve_cartelera_evidence_user,l10n.ve.cartelera.evidence.user,model_l10n_ve_cartelera_evidence,account.group_account_user,1,0,0,0
+access_l10n_ve_cartelera_evidence_manager,l10n.ve.cartelera.evidence.manager,model_l10n_ve_cartelera_evidence,account.group_account_manager,1,1,1,1
+access_l10n_ve_cartelera_evidence_accountant,l10n.ve.cartelera.evidence.accountant,model_l10n_ve_cartelera_evidence,l10n_ve_compliance_accountant,1,1,1,1
+access_l10n_ve_cartelera_evidence_wizard_user,l10n.ve.cartelera.evidence.wizard.user,model_l10n_ve_cartelera_evidence_wizard,base.group_user,1,1,1,1
+access_l10n_ve_cartelera_evidence_wizard_manager,l10n.ve.cartelera.evidence.wizard.manager,model_l10n_ve_cartelera_evidence_wizard,account.group_account_manager,1,1,1,1
