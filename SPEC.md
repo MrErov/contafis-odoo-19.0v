@@ -37,7 +37,6 @@ para contadores en Venezuela. Multi-cliente (el contador gestiona varias empresa
 - `l10n.ve.import.wizard` / `l10n.ve.import.line` / `l10n.ve.import.mapping`
   / `l10n.ve.import.log` — Wizard de importación Excel (4 modelos)
 - `l10n.ve.cartelera.status` — Snapshot mensual de cartelera fiscal
-  (EN DESARROLLO, Fase B)
 
 ## Extensiones Core
 - `account.move`: `retention_ids`, `retention_amount`, `action_generate_retention()` (solo `in_invoice`)
@@ -60,11 +59,12 @@ para contadores en Venezuela. Multi-cliente (el contador gestiona varias empresa
 - ✅ 2B.2: `_validate_business` (validación de negocio)
 - ✅ 2B.3: `action_import` + `_upsert_record` + savepoints
 
-### Fase A-D: Cartelera Fiscal Excel (COMPLETADA)
+### Fase A-E: Cartelera Fiscal Excel (COMPLETADA)
 - ✅ A: 36 tipos de documento (C01-C36) + institución MINTRA
 - ✅ B: Modelo `cartelera.status` + `document_score`
 - ✅ C: Parser + import (rama `cartelera` del wizard)
 - ✅ D: Vista de brechas + spec 07 + tests
+- ✅ E: Parser dinámico (detección fila headers, col RIF, col nombre, rango docs; mapeo posicional C01..C36; manejo duplicados; normalización HTML; validación 30+ cols; warning headers no reconocidos)
 
 ### Trabajo Futuro
 - ⬜ Importación de asientos contables (account.move)
@@ -76,7 +76,7 @@ para contadores en Venezuela. Multi-cliente (el contador gestiona varias empresa
 
 - ✅ README.md, CHANGELOG.md, LICENSE (LGPL-3), CONTRIBUTING.md
 - ✅ Metodología SDD (AGENTS.md, docs/specs/, opencode.json)
-- ✅ 35 tests pasando
+- ✅ 53 tests pasando
 - ✅ Comandos OpenCode en `.opencode/commands/`
 - ⬜ Capturas de pantalla en docs/screenshots/
 - ⬜ Topics GitHub
