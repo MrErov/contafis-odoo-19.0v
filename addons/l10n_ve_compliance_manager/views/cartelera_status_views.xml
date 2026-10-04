@@ -1,0 +1,100 @@
+<odoo>
+    <record id="view_l10n_ve_cartelera_status_list" model="ir.ui.view">
+        <field name="name">l10n.ve.cartelera.status.list</field>
+        <field name="model">l10n.ve.cartelera.status</field>
+        <field name="arch" type="xml">
+            <list string="Snapshots Cartelera" multi_edit="0">
+                <field name="client_id"/>
+                <field name="year"/>
+                <field name="month"/>
+                <field name="document_type_id"/>
+                <field name="state"/>
+                <field name="expiry_date"/>
+                <field name="date_generated" readonly="1"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_l10n_ve_cartelera_status_form" model="ir.ui.view">
+        <field name="name">l10n.ve.cartelera.status.form</field>
+        <field name="model">l10n.ve.cartelera.status</field>
+        <field name="arch" type="xml">
+            <form string="Snapshot Cartelera" create="0" edit="0">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="client_id" readonly="1"/>
+                            <field name="year" readonly="1"/>
+                            <field name="month" readonly="1"/>
+                            <field name="document_type_id" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="state" readonly="1"
+                                   decoration-success="state == 'valid'"
+                                   decoration-danger="state == 'expired'"
+                                   decoration-warning="state in ('pending', 'missing')"
+                                   decoration-muted="state == 'rejected'"/>
+                            <field name="expiry_date" readonly="1"/>
+                            <field name="document_id" readonly="1"/>
+                            <field name="date_generated" readonly="1"/>
+                        </group>
+                    </group>
+                    <group string="Notas">
+                        <field name="notes" nolabel="1" readonly="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_l10n_ve_cartelera_status_search" model="ir.ui.view">
+        <field name="name">l10n.ve.cartelera.status.search</field>
+        <field name="model">l10n.ve.cartelera.status</field>
+        <field name="arch" type="xml">
+            <search string="Snapshots Cartelera">
+                <field name="client_id"/>
+                <field name="document_type_id"/>
+                <field name="state"/>
+                <filter string="Válidos" name="filter_valid" domain="[('state', '=', 'valid')]"/>
+                <filter string="Expirados" name="filter_expired" domain="[('state', '=', 'expired')]"/>
+                <filter string="Pendientes" name="filter_pending" domain="[('state', '=', 'pending')]"/>
+                <filter string="Faltantes" name="filter_missing" domain="[('state', '=', 'missing')]"/>
+                <filter string="Rechazados" name="filter_rejected" domain="[('state', '=', 'rejected')]"/>
+                <separator/>
+                <filter string="Año actual" name="filter_current_year"
+                        context="{'year': str(context_today().year)}"/>
+                <filter string="Mes actual" name="filter_current_month"
+                        context="{'month': str(context_today().month)}"/>
+                <separator/>
+                <group>
+                    <filter string="Cliente" name="groupby_client" context="{'group_by': 'client_id'}"/>
+                    <filter string="Año" name="groupby_year" context="{'group_by': 'year'}"/>
+                    <filter string="Mes" name="groupby_month" context="{'group_by': 'month'}"/>
+                    <filter string="Tipo documento" name="groupby_type" context="{'group_by': 'document_type_id'}"/>
+                    <filter string="Estado" name="groupby_state" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_l10n_ve_cartelera_status" model="ir.actions.act_window">
+        <field name="name">Snapshots Cartelera Fiscal</field>
+        <field name="res_model">l10n.ve.cartelera.status</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No hay snapshots de cartelera fiscal
+            </p>
+            <p>
+                Los snapshots se generan automáticamente cada mes mediante el cron
+                o manualmente desde la importación de cartelera Excel.
+            </p>
+        </field>
+    </record>
+
+    <menuitem id="menu_l10n_ve_cartelera_status"
+              name="Snapshots Cartelera"
+              parent="menu_l10n_ve_compliance_root"
+              action="action_l10n_ve_cartelera_status"
+              sequence="35"/>
+</odoo>

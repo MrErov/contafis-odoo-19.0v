@@ -27,6 +27,11 @@ class ComplianceClient(models.Model):
         ('vencido', 'Vencido'),
     ], string='Estado de cumplimiento', compute='_compute_compliance_status')
     compliance_score = fields.Float(string='Puntuación de cumplimiento', compute='_compute_compliance_score')
+    document_score = fields.Float(
+        string='Puntuación documental',
+        compute='_compute_document_score',
+        help='% de documentos requeridos con estado válido',
+    )
     last_alert_date = fields.Datetime(string='Fecha de última alerta')
     pending_alert_count = fields.Integer(string='Alertas pendientes', compute='_compute_pending_alert_count')
 
@@ -81,6 +86,24 @@ class ComplianceClient(models.Model):
                 )
             )
             client.compliance_score = round((total - len(subject)) * 100.0 / total, 2)
+
+    @api.depends('document_ids.state', 'document_ids.document_type_id')
+    def _compute_document_score(self):
+        for client in self:
+            required_types = self.env['l10n.ve.document.type'].search([
+                ('required_for', '=', 'company'),
+            ])
+            if not required_types:
+                client.document_score = 100.0
+                continue
+            valid_count = 0
+            for doc_type in required_types:
+                docs = client.document_ids.filtered(
+                    lambda d: d.document_type_id == doc_type
+                )
+                if docs.filtered(lambda d: d.state == 'valid'):
+                    valid_count += 1
+            client.document_score = round(valid_count * 100.0 / len(required_types), 2)
 
     @api.depends('alert_ids.state')
     def _compute_pending_alert_count(self):

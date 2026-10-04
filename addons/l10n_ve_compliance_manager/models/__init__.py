@@ -13,3 +13,4 @@ from . import import_line
 from . import import_log
 from . import account_move
 from . import res_partner
+from . import cartelera_status

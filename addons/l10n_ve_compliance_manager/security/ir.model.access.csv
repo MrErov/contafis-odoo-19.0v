@@ -32,3 +32,6 @@ access_l10n_ve_import_mapping_user,l10n.ve.import.mapping.user,model_l10n_ve_imp
 access_l10n_ve_import_mapping_manager,l10n.ve.import.mapping.manager,model_l10n_ve_import_mapping,account.group_account_manager,1,1,1,1
 access_l10n_ve_import_line_user,l10n.ve.import.line.user,model_l10n_ve_import_line,base.group_user,1,1,1,1
 access_l10n_ve_import_line_manager,l10n.ve.import.line.manager,model_l10n_ve_import_line,account.group_account_manager,1,1,1,1
+access_l10n_ve_cartelera_status_user,l10n.ve.cartelera.status.user,model_l10n_ve_cartelera_status,account.group_account_user,1,0,0,0
+access_l10n_ve_cartelera_status_manager,l10n.ve.cartelera.status.manager,model_l10n_ve_cartelera_status,account.group_account_manager,1,1,1,1
+access_l10n_ve_cartelera_status_accountant,l10n.ve.cartelera.status.accountant,model_l10n_ve_cartelera_status,l10n_ve_compliance_accountant,1,1,1,1

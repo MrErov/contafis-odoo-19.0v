@@ -38,6 +38,7 @@ Incluye:
         'views/account_move_views.xml',
         'views/menu.xml',
         'views/import_views.xml',
+        'views/cartelera_status_views.xml',
     ],
     'demo': [
         'demo/demo_data.xml',
