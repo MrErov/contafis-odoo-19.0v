@@ -14,7 +14,7 @@ Reemplazar los Excel de libro de compras/ventas y Planilla IVA 99030 que los con
 **No incluye:**
 - Envío electrónico al SENIAT (el portal no acepta archivos)
 - Conciliación ISLR (va en spec 11 separada)
-- Importación desde Excel de libros existentes (fase futura)
+- Importación desde Excel de libros existentes (spec 10, Fase G)
 
 ## Modelos involucrados
 
@@ -86,7 +86,7 @@ Reemplazar los Excel de libro de compras/ventas y Planilla IVA 99030 que los con
 ## Trabajo Futuro
 - Conciliación ISLR (spec 11)
 - Envío electrónico si SENIAT habilita API
-- Importación de libros históricos desde Excel
+- Importación de libros históricos desde Excel (spec 10)
 
 ## Notas de implementación
 - **retention_direction** (by_buyer/to_vendor/to_third) en lugar de `vat_retained_by_buyer` para distinguir retenciones de ventas vs compras
