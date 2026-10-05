@@ -109,8 +109,9 @@ class VatBookLine(models.Model):
     )
 
     _sql_constraints = [
-        ('unique_line', 'UNIQUE(partner_id, invoice_number, control_number, period_month, company_id)',
-         'Ya existe una línea para esta factura en el período y compañía.'),
+        ('unique_line', 
+         'UNIQUE(partner_id, invoice_number, control_number, period_month, company_id, operation_code, retention_direction)',
+         'Ya existe una línea para esta factura en el período con ese código de operación y dirección de retención.'),
     ]
 
     @api.model

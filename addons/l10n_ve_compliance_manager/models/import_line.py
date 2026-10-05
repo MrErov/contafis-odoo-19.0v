@@ -40,6 +40,7 @@ class ImportLine(models.TransientModel):
             ('l10n.ve.compliance.client', 'Cliente Cumplimiento'),
             ('l10n.retention', 'Retención'),
             ('l10n.ve.cartelera.status', 'Cartelera Status'),
+            ('l10n.ve.vat.book.line', 'Libro IVA Línea'),
         ]
 
     def _validate_syntax(self):
