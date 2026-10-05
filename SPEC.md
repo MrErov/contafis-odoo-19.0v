@@ -29,8 +29,8 @@ para contadores en Venezuela. Multi-cliente (el contador gestiona varias empresa
    fotográfica de documentos de cartelera + transición
    automática de estado
 9. **[09-libro-compras-ventas.md](specs/09-libro-compras-ventas.md)**
-   — Libro de Compras/Ventas + Planilla IVA 99030
-10. **[10-importacion-vat-book.md](specs/10-importacion-vat-book.md)**
+    — Libro de Compras/Ventas + Planilla IVA 99030
+10. **[10-importacion-libro-compras-ventas.md](specs/10-importacion-libro-compras-ventas.md)**
     — Importación de Libro de Compras/Ventas desde Excel (canal
     alterno al Odoo-first)
 
