@@ -5,3 +5,4 @@ from . import test_document_types
 from . import test_cartelera_status
 from . import test_import_cartelera
 from . import test_cartelera_evidence
+from . import test_compliance_client
