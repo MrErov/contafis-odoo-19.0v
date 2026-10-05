@@ -30,6 +30,9 @@ para contadores en Venezuela. Multi-cliente (el contador gestiona varias empresa
    automática de estado
 9. **[09-libro-compras-ventas.md](specs/09-libro-compras-ventas.md)**
    — Libro de Compras/Ventas + Planilla IVA 99030
+10. **[10-importacion-vat-book.md](specs/10-importacion-vat-book.md)**
+    — Importación de Libro de Compras/Ventas desde Excel (canal
+    alterno al Odoo-first)
 
 ## Modelos Principales (resumen)
 - `l10n.ve.compliance.client` — Cliente multi-empresa, score, status, alertas
@@ -94,8 +97,8 @@ para contadores en Venezuela. Multi-cliente (el contador gestiona varias empresa
 - ✅ 78 tests pasando (63 + 15 nuevos)
 
 ### Trabajo Futuro
-- ⬜ Spec 10: Conciliación ISLR
-- ⬜ Fase G: Importación de Libro de Compras/Ventas desde Excel
+- ⬜ Spec 11: Conciliación ISLR
+- ⬜ Fase G: Importación de Libro de Compras/Ventas desde Excel (spec 10)
   (aprovecha wizard existente, ramas vat_book_purchase y vat_book_sale)
 - ⬜ Migrar `_sql_constraints` a `models.Constraint` (Odoo 19 lo
   marcó deprecated, aparecen 2 warnings en logs)
