@@ -1,3 +1,4 @@
+import base64
 from odoo import api, fields, models
 from odoo.exceptions import UserError
 from odoo.tools import image as image_tools
@@ -30,16 +31,13 @@ class CarteleraEvidenceWizard(models.TransientModel):
     def _compute_file_size_mb(self):
         for rec in self:
             if rec.image:
-                import base64
                 rec.file_size_mb = len(base64.b64decode(rec.image)) / (1024 * 1024)
             else:
                 rec.file_size_mb = 0.0
 
-    @api.model
     def _get_max_size_mb(self):
-        """Obtiene el tamaño máximo permitido en MB desde ir.config_parameter."""
-        ICP = self.env['ir.config_parameter'].sudo()
-        return float(ICP.get_param('l10n_ve_compliance.evidence_max_size_mb', '5.0'))
+        """Obtiene el tamaño máximo permitido en MB desde ir.config_parameter (usa modelo)."""
+        return self.env['l10n.ve.cartelera.evidence']._get_max_size_mb()
 
     def _get_extension(self):
         """Extrae la extensión del filename (sin punto, lowercase)."""
@@ -57,18 +55,17 @@ class CarteleraEvidenceWizard(models.TransientModel):
         """
         if not image_data:
             return image_data
-        import base64
         # Decode base64 to bytes for image_process
         image_bytes = base64.b64decode(image_data)
+        # image_process returns bytes; Odoo Binary field handles base64 encoding
         compressed_bytes = image_tools.image_process(image_bytes, size=(1024, 1024))
-        # Re-encode to base64 for storage
+        # Return base64 string for Binary field assignment
         return base64.b64encode(compressed_bytes).decode()
 
     def _get_size_mb(self, image_data):
         """Calcula el tamaño en MB de un binario base64."""
         if not image_data:
             return 0.0
-        import base64
         return len(base64.b64decode(image_data)) / (1024 * 1024)
 
     def action_upload(self):

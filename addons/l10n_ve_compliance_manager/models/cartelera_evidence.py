@@ -1,3 +1,4 @@
+import base64
 from odoo import api, fields, models
 from odoo.exceptions import ValidationError
 from odoo.tools import image as image_tools
@@ -56,7 +57,6 @@ class CarteleraEvidence(models.Model):
     def _compute_file_size_mb(self):
         for rec in self:
             if rec.image:
-                import base64
                 rec.file_size_mb = len(base64.b64decode(rec.image)) / (1024 * 1024)
             else:
                 rec.file_size_mb = 0.0
