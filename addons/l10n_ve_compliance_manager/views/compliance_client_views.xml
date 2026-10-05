@@ -131,7 +131,7 @@
                         <div t-attf-class="oe_kanban_global_click">
                             <div class="o_kanban_record_top">
                                 <div class="o_kanban_heading d-flex align-items-center">
-                                    <img t-att-src="kanban_image('res.partner', 'image_1920', record.partner_id.raw_value)"
+                                    <img t-att-src="record.partner_id.raw_value ? '/web/image/res.partner/' + record.partner_id.raw_value + '/image_128' : '/web/static/img/placeholder.png'"
                                          class="o_kanban_image rounded-circle me-2"
                                          style="width: 40px; height: 40px; object-fit: cover;"
                                          alt="Logo"/>
