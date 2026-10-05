@@ -5,11 +5,11 @@ Reemplazar los Excel de libro de compras/ventas y Planilla IVA 99030 que los con
 
 ## Alcance
 **Incluye:**
-- Modelo `l10n.ve.vat.book.line` con `book_type` (purchase/sale), `period_month`, partner info, `invoice_number`, `control_number`, `operation_code`, `total_with_vat`, `base_general`, `vat_general`, `base_reduced`, `vat_reduced`, `base_no_credit`, `base_not_subject`, `base_not_taxed`, `retention_number`, `vat_retained_by_buyer`
-- Wizard `l10n.ve.vat.book.generate` desde `account.move`
-- Modelo `l10n.ve.vat.return` con los 48 ítems de la Forma 99030
-- Arrastre de excedente de crédito fiscal (item_60 mes N → item_20 mes N+1)
-- Reporte PDF Forma 99030 imprimible
+- ✅ Modelo `l10n.ve.vat.book.line` con `book_type` (purchase/sale), `period_month`, partner info, `invoice_number`, `control_number`, `operation_code`, `total_with_vat`, `base_general`, `vat_general`, `base_reduced`, `vat_reduced`, `base_no_credit`, `base_not_subject`, `base_not_taxed`, `retention_number`, `vat_retained`, `retention_direction` (by_buyer/to_vendor/to_third)
+- ✅ Wizard `l10n.ve.vat.book.generate` desde `account.move`
+- ✅ Modelo `l10n.ve.vat.return` con los 48 ítems de la Forma 99030
+- ✅ Arrastre de excedente de crédito fiscal (item_60 mes N → item_20 mes N+1)
+- ✅ Reporte PDF Forma 99030 imprimible
 
 **No incluye:**
 - Envío electrónico al SENIAT (el portal no acepta archivos)
@@ -26,7 +26,7 @@ Reemplazar los Excel de libro de compras/ventas y Planilla IVA 99030 que los con
 | `partner_id` | Many2one | Proveedor o cliente |
 | `invoice_number` | Char | Número de factura |
 | `control_number` | Char | Número de control SENIAT |
-| `operation_code` | Char | Código SENIAT (40/41/42/442/443/452/453/33/34/332/342/343) |
+| `operation_code` | Char | Código SENIAT (40/41/42/442/443/452/453/33/34/332/333/342/343) |
 | `total_with_vat` | Float | Total con IVA |
 | `base_general` | Float | Base imponible alícuota general |
 | `vat_general` | Float | IVA alícuota general |
@@ -36,7 +36,8 @@ Reemplazar los Excel de libro de compras/ventas y Planilla IVA 99030 que los con
 | `base_not_subject` | Float | Base no sujeta |
 | `base_not_taxed` | Float | Base no gravada |
 | `retention_number` | Char | Número de comprobante retención |
-| `vat_retained_by_buyer` | Float | IVA retenido por comprador |
+| `vat_retained` | Float | IVA retenido |
+| `retention_direction` | Selection | `by_buyer` / `to_vendor` / `to_third` |
 
 ### `l10n.ve.vat.book.generate` (TransientModel)
 | Campo | Tipo | Descripción |
@@ -61,12 +62,12 @@ Reemplazar los Excel de libro de compras/ventas y Planilla IVA 99030 que los con
 4. Excedente: item_60 = max(0, item_39 - item_49). Si positivo, arrastra al item_20 del mes siguiente. Si negativo, se paga (item_53)
 5. Retenciones del período (item_66) se descuentan del total a pagar
 6. Los 48 ítems son campos fijos, no líneas dinámicas (la planilla es rígida por diseño SENIAT)
-7. Los códigos de operación SENIAT en el libro son: 40 (ventas no gravadas), 41 (exportación), 42 (ventas gravadas 16%), 442 (ventas + alícuota adicional), 443 (ventas alícuota reducida), 33 (compras gravadas 16%), 34 (IVA compras), 332/342 (compras + adicional), 343 (compras alícuota reducida)
+7. Los códigos de operación SENIAT en el libro son: 40 (ventas no gravadas), 41 (exportación), 42 (ventas gravadas 16%), 442 (ventas + alícuota adicional), 443 (ventas alícuota reducida), 33 (compras gravadas 16%), 34 (IVA compras), 332/342 (compras + adicional), 333 (base reducida 8% compras), 343 (IVA reducido 8% compras)
 
 ### Rangos de los 48 ítems de la Forma 99030
 | Rango | Ítems |
 |-------|-------|
-| Débitos | 40, 41, 42, 442, 443, 452, 453, 46, 47, 48, 80, 49 |
+| Débitos | 40, 41, 42, 43, 442, 443, 452, 453, 46, 47, 48, 80, 49 |
 | Créditos | 30, 31, 32, 312, 313, 322, 323, 33, 34, 332, 333, 342, 343, 35, 36, 70, 37, 71, 20, 21, 81, 38, 82, 39 |
 | Autoliquidación | 53, 60, 22, 51, 24, 78, 54, 66, 72, 73, 74, 55, 67, 56, 57, 68, 75, 76, 77, 58, 69, 90 |
 
@@ -86,3 +87,13 @@ Reemplazar los Excel de libro de compras/ventas y Planilla IVA 99030 que los con
 - Conciliación ISLR (spec 10)
 - Envío electrónico si SENIAT habilita API
 - Importación de libros históricos desde Excel
+
+## Notas de implementación
+- **retention_direction** (by_buyer/to_vendor/to_third) en lugar de `vat_retained_by_buyer` para distinguir retenciones de ventas vs compras
+- **item_70 = item_36** (créditos fiscales deducibles = IVA compras)
+- **item_71 = item_70 + item_37** (prorrata)
+- **item_39 = item_71 + item_20 - item_21 - item_81 + item_38 - item_82**
+- **Multi-rate por factura**: se crea una línea de vat.book.line por cada tasa IVA distinta en la misma factura
+- **Sin detección automática de exportación** (l10n_latam_invoice_document no está instalado). TODO Fase G.
+- **item_43 es obligatorio** (IVA ventas 16%) además de item_42 (base)
+- **action_load_from_book()** es no-op si no hay líneas del período (no lanza UserError)

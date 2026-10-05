@@ -45,6 +45,9 @@ para contadores en Venezuela. Multi-cliente (el contador gestiona varias empresa
 - `l10n.ve.cartelera.evidence` — Evidencia fotográfica con compresión automática
   y límite de tamaño configurable
 - `l10n.ve.cartelera.evidence.wizard` — Captura/subida de evidencia al cliente
+- `l10n.ve.vat.book.line` — Línea de libro de compras/ventas IVA
+- `l10n.ve.vat.book.generate` — Wizard de generación desde account.move
+- `l10n.ve.vat.return` — Planilla IVA 99030 (48 ítems fijos)
 
 ## Extensiones Core
 - `account.move`: `retention_ids`, `retention_amount`, `action_generate_retention()` (solo `in_invoice`)
@@ -82,10 +85,20 @@ para contadores en Venezuela. Multi-cliente (el contador gestiona varias empresa
 - ✅ Fix OWL: kanban_image y t-out reemplazados por patrones Odoo 19
 - ✅ 63 tests pasando
 
+### Fase F: Libro de Compras/Ventas + Planilla IVA 99030 (COMPLETADA)
+- ✅ Modelo l10n.ve.vat.book.line (multi-rate por factura)
+- ✅ Wizard l10n.ve.vat.book.generate desde account.move
+- ✅ Modelo l10n.ve.vat.return (48 ítems Forma 99030)
+- ✅ Arrastre de excedente item_60 → item_20 mes siguiente
+- ✅ Reporte PDF Forma 99030
+- ✅ 78 tests pasando (63 + 15 nuevos)
+
 ### Trabajo Futuro
 - ⬜ Spec 10: Conciliación ISLR
-- ⬜ Fase F: Libro de Compras/Ventas + Planilla IVA 99030
-  (spec 09 lista)
+- ⬜ Fase G: Importación de Libro de Compras/Ventas desde Excel
+  (aprovecha wizard existente, ramas vat_book_purchase y vat_book_sale)
+- ⬜ Migrar `_sql_constraints` a `models.Constraint` (Odoo 19 lo
+  marcó deprecated, aparecen 2 warnings en logs)
 - ⬜ Importación de asientos contables (account.move)
 - ⬜ Integración MCP Odoo (mart337i/odoo-dev-mcp)
 
@@ -93,7 +106,7 @@ para contadores en Venezuela. Multi-cliente (el contador gestiona varias empresa
 
 - ✅ README.md, CHANGELOG.md, LICENSE (LGPL-3), CONTRIBUTING.md
 - ✅ Metodología SDD (AGENTS.md, docs/specs/, opencode.json)
-- ✅ 63 tests pasando
+- ✅ 78 tests pasando
 - ✅ Comandos OpenCode en `.opencode/commands/`
 - ⬜ Capturas de pantalla en docs/screenshots/
 - ⬜ Topics GitHub
