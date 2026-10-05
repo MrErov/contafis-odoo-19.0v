@@ -187,6 +187,32 @@ Reportar al usuario:
 - Asegurar nueva línea final (`\n` al terminar).
 - NO modificar la sección Anti-patterns existente.
 
+## Anti-patterns aprendidos en Fase E2
+
+### 7. Archivos temporales (reiterado)
+En 2 sub-tareas se crearon 8 archivos `fix_*.py`, `debug.py`,
+`check_*.py` en la raíz. Cualquier agente que los cree debe:
+- DETENERSE
+- Borrarlos con `rm`
+- Reportar el incidente
+
+### 8. OWL / kanban templates
+- ❌ `kanban_image()` no existe en Odoo 19. Usar URL directa
+  `/web/image/<model>/<id>/<field>`.
+- ❌ `t-out` no funciona en `<t t-name="card">` de kanban. Usar
+  `<field name="..."/>` directo.
+- ❌ `widget="image"` sobre campos related non-stored causa OWL
+  crash. Usar `<img>` con URL construida.
+- ✅ El patrón correcto se ve en `addons/web/views/res_partner_views.xml`.
+
+### 9. Verificación visual obligatoria
+Cuando se tocan vistas kanban, el agente debe:
+- Reiniciar contenedor (`docker compose restart web`).
+- Upgrade CLI.
+- Abrir el navegador con Ctrl+Shift+R.
+- Reportar captura o descripción.
+Sin captura, "funciona" no es válido.
+
 ## Bug conocido: menús y caché
 
 Si tras `-u l10n_ve_compliance_manager` un menuitem no aparece en la UI:

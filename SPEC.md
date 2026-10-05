@@ -37,6 +37,9 @@ para contadores en Venezuela. Multi-cliente (el contador gestiona varias empresa
 - `l10n.ve.import.wizard` / `l10n.ve.import.line` / `l10n.ve.import.mapping`
   / `l10n.ve.import.log` — Wizard de importación Excel (4 modelos)
 - `l10n.ve.cartelera.status` — Snapshot mensual de cartelera fiscal
+- `l10n.ve.cartelera.evidence` — Evidencia fotográfica con compresión automática
+  y límite de tamaño configurable
+- `l10n.ve.cartelera.evidence.wizard` — Captura/subida de evidencia al cliente
 
 ## Extensiones Core
 - `account.move`: `retention_ids`, `retention_amount`, `action_generate_retention()` (solo `in_invoice`)
@@ -66,6 +69,14 @@ para contadores en Venezuela. Multi-cliente (el contador gestiona varias empresa
 - ✅ D: Vista de brechas + spec 07 + tests
 - ✅ E: Parser dinámico (detección fila headers, col RIF, col nombre, rango docs; mapeo posicional C01..C36; manejo duplicados; normalización HTML; validación 30+ cols; warning headers no reconocidos)
 
+### Fase E2: UX visual cartelera fiscal (COMPLETADA)
+- ✅ Evidence con compresión automática + límite de tamaño configurable
+- ✅ Logo cliente en kanban
+- ✅ Mini-cartelera HTML agrupada por institución
+- ✅ Kanban extendido con document_score
+- ✅ Fix OWL: kanban_image y t-out reemplazados por patrones Odoo 19
+- ✅ 63 tests pasando
+
 ### Trabajo Futuro
 - ⬜ Importación de asientos contables (account.move)
 - ⬜ Integración MCP Odoo (mart337i/odoo-dev-mcp)
@@ -76,7 +87,7 @@ para contadores en Venezuela. Multi-cliente (el contador gestiona varias empresa
 
 - ✅ README.md, CHANGELOG.md, LICENSE (LGPL-3), CONTRIBUTING.md
 - ✅ Metodología SDD (AGENTS.md, docs/specs/, opencode.json)
-- ✅ 53 tests pasando
+- ✅ 63 tests pasando
 - ✅ Comandos OpenCode en `.opencode/commands/`
 - ⬜ Capturas de pantalla en docs/screenshots/
 - ⬜ Topics GitHub
