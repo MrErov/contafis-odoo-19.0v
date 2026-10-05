@@ -28,6 +28,7 @@ Incluye:
         'data/seniat_calendar_2026.xml',
         'data/institution_data.xml',
         'data/document_type_cartelera.xml',
+        'data/ir_config_parameter_data.xml',
         'report/compliance_report.xml',
         'views/institution_views.xml',
         'views/obligation_type_views.xml',

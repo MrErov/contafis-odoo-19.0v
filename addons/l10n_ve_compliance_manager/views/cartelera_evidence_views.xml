@@ -8,8 +8,13 @@
                     <group>
                         <field name="cartelera_status_id" invisible="1"/>
                         <field name="image" widget="image" class="oe_avatar"/>
+                        <field name="filename" readonly="1"/>
+                        <field name="file_size_mb" readonly="1"/>
                         <field name="notes"/>
                     </group>
+                    <div class="alert alert-info" role="alert">
+                        Tamaño máximo: 5 MB. Las imágenes se comprimen automáticamente a 1024x1024.
+                    </div>
                 </sheet>
                 <footer>
                     <button string="Subir" type="object" name="action_upload"
