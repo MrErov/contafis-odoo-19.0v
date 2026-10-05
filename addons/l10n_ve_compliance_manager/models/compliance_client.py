@@ -1,3 +1,5 @@
+from collections import defaultdict
+from markupsafe import Markup, escape
 from odoo import api, fields, models
 
 
@@ -34,6 +36,21 @@ class ComplianceClient(models.Model):
     )
     last_alert_date = fields.Datetime(string='Fecha de última alerta')
     pending_alert_count = fields.Integer(string='Alertas pendientes', compute='_compute_pending_alert_count')
+    partner_image_1920 = fields.Binary(
+        string='Logo',
+        related='partner_id.image_1920',
+    )
+    cartelera_status_current_ids = fields.One2many(
+        'l10n.ve.cartelera.status',
+        'client_id',
+        compute='_compute_cartelera_status_current',
+        string='Cartelera Mes Actual',
+    )
+    cartelera_html = fields.Html(
+        string='Mini-Cartelera',
+        compute='_compute_cartelera_html',
+        sanitize=False,
+    )
 
     @api.depends('rif')
     def _compute_rif_last_digit(self):
@@ -125,3 +142,83 @@ class ComplianceClient(models.Model):
             'domain': [('client_id', '=', self.id), ('state', '=', 'missing')],
             'context': {'default_client_id': self.id},
         }
+
+    @api.depends('cartelera_status_current_ids.state', 'cartelera_status_current_ids.document_type_id')
+    def _compute_cartelera_html(self):
+        """Genera HTML de mini-cartelera agrupado por institución con badges de estado."""
+
+        for client in self:
+            statuses = client.cartelera_status_current_ids
+
+            if not statuses:
+                client.cartelera_html = Markup(
+                    '<div class="text-muted text-center py-2">Sin datos para el mes actual</div>'
+                )
+                continue
+
+            # Agrupar por institución
+            by_institution = defaultdict(list)
+            for status in statuses:
+                inst = status.document_type_id.institution_id
+                if inst:
+                    by_institution[inst.id].append(status)
+
+            parts = [Markup('<div class="cartelera-mini">')]
+
+            # Ordenar instituciones por tipo (orden estándar)
+            type_order = ['seniat', 'ivss', 'inces', 'banavih', 'mintra', 'municipal', 'saren', 'otro']
+            sorted_institutions = sorted(
+                by_institution.items(),
+                key=lambda x: type_order.index(x[1][0].document_type_id.institution_id.type) if x[1][0].document_type_id.institution_id and x[1][0].document_type_id.institution_id.type in type_order else 99
+            )
+
+            for inst_id, status_list in sorted_institutions:
+                if not status_list:
+                    continue
+                inst = status_list[0].document_type_id.institution_id
+                if not inst:
+                    continue
+
+                # Nombre de institución escapado
+                parts.append(Markup('<div class="institution-block mb-2">'))
+                parts.append(Markup('<strong class="institution-title">{}</strong>').format(escape(inst.name)))
+
+                for status in status_list:
+                    doc_type = status.document_type_id
+                    state = status.state
+
+                    # Clase CSS según estado
+                    state_class_map = {
+                        'valid': 'bg-success',
+                        'missing': 'bg-danger',
+                        'expired': 'bg-danger',
+                        'pending': 'bg-warning text-dark',
+                        'rejected': 'bg-secondary',
+                    }
+                    badge_class = state_class_map.get(state, 'bg-secondary')
+
+                    # Badge del documento
+                    parts.append(Markup(
+                        '<span class="badge {cls} me-1">{code}</span>'
+                    ).format(
+                        cls=escape(badge_class),
+                        code=escape(doc_type.code),
+                    ))
+
+                parts.append(Markup('</div>'))
+
+            parts.append(Markup('</div>'))
+            client.cartelera_html = Markup('').join(parts)
+
+    def _compute_cartelera_status_current(self):
+        """Obtiene los statuses de cartelera del mes actual."""
+        today = fields.Date.today()
+        current_year = today.year
+        current_month = str(today.month)
+
+        for client in self:
+            client.cartelera_status_current_ids = self.env['l10n.ve.cartelera.status'].search([
+                ('client_id', '=', client.id),
+                ('year', '=', current_year),
+                ('month', '=', current_month),
+            ])
