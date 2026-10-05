@@ -1,0 +1,171 @@
+<odoo>
+    <record id="view_l10n_ve_vat_return_list" model="ir.ui.view">
+        <field name="name">l10n.ve.vat.return.list</field>
+        <field name="model">l10n.ve.vat.return</field>
+        <field name="arch" type="xml">
+            <list string="Planilla IVA 99030" multi_edit="1">
+                <field name="period_month"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="item_49"/>
+                <field name="item_39"/>
+                <field name="item_60"/>
+                <field name="item_53"/>
+                <field name="item_20"/>
+                <field name="item_66"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_l10n_ve_vat_return_form" model="ir.ui.view">
+        <field name="name">l10n.ve.vat.return.form</field>
+        <field name="model">l10n.ve.vat.return</field>
+        <field name="arch" type="xml">
+            <form string="Planilla IVA 99030">
+                <header>
+                    <button name="action_load_from_book" string="Cargar desde Libro" type="object" class="btn-primary"/>
+                    <button name="action_calculate" string="Calcular" type="object" class="btn-primary"/>
+                    <button name="action_open_book_lines" string="Ver Líneas Libro" type="object" class="btn-secondary"/>
+                    <field name="state" widget="statusbar" invisible="1"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="period_month"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Débitos (Items 40-49)">
+                            <group>
+                                <group string="Ventas No Sujetas / Exportaciones">
+                                    <field name="item_40" readonly="1"/>
+                                    <field name="item_41" readonly="1"/>
+                                </group>
+                                <group string="Gravadas 16%">
+                                    <field name="item_42" readonly="1"/>
+                                    <field name="item_43" readonly="1"/>
+                                </group>
+                                <group string="Gravadas + Adicional">
+                                    <field name="item_442" readonly="1"/>
+                                    <field name="item_452" readonly="1"/>
+                                </group>
+                                <group string="Reducidas 8%">
+                                    <field name="item_443" readonly="1"/>
+                                    <field name="item_453" readonly="1"/>
+                                </group>
+                                <group string="Totales y Ajustes">
+                                    <field name="item_46" readonly="1" help="Total bases ventas (computado)"/>
+                                    <field name="item_47" readonly="1" help="Total IVA ventas = item_43 + item_452 + item_453 (computado)"/>
+                                    <field name="item_48"/>
+                                    <field name="item_80"/>
+                                    <field name="item_49" readonly="1" help="Total débitos = item_47 + item_48 - item_80 (computado)"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Créditos (Items 30-39)">
+                            <group>
+                                <group string="Compras Nacionales">
+                                    <field name="item_30" readonly="1"/>
+                                    <field name="item_33" readonly="1"/>
+                                    <field name="item_34" readonly="1"/>
+                                    <field name="item_332" readonly="1"/>
+                                    <field name="item_333" readonly="1"/>
+                                    <field name="item_342" readonly="1"/>
+                                    <field name="item_343" readonly="1"/>
+                                </group>
+                                <group string="Importaciones">
+                                    <field name="item_31" readonly="1"/>
+                                    <field name="item_32" readonly="1"/>
+                                    <field name="item_312" readonly="1"/>
+                                    <field name="item_313" readonly="1"/>
+                                    <field name="item_322" readonly="1"/>
+                                    <field name="item_323" readonly="1"/>
+                                </group>
+                                <group string="Totales y Ajustes">
+                                    <field name="item_35" readonly="1" help="Total bases compras (computado)"/>
+                                    <field name="item_36" readonly="1" help="Total IVA compras (computado)"/>
+                                    <field name="item_37"/>
+                                    <field name="item_70"/>
+                                    <field name="item_38"/>
+                                    <field name="item_71" readonly="1" help="Excedente período anterior (cargado desde mes anterior)"/>
+                                    <field name="item_20" readonly="1" help="Excedente arrastre = item_60 mes anterior (computado)"/>
+                                    <field name="item_21"/>
+                                    <field name="item_81"/>
+                                    <field name="item_82"/>
+                                    <field name="item_39" readonly="1" help="Total créditos = item_71 + item_20 - item_21 - item_81 + item_38 - item_82 (computado)"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Autoliquidación (Items 53-90)">
+                            <group>
+                                <group string="Liquidación Principal">
+                                    <field name="item_53" readonly="1" help="IVA a pagar (computado)"/>
+                                    <field name="item_60" readonly="1" help="Excedente crédito fiscal (computado)"/>
+                                    <field name="item_22" readonly="1" help="Excedente a favor (computado)"/>
+                                    <field name="item_51"/>
+                                    <field name="item_24" readonly="1" help="Saldo a favor (computado)"/>
+                                </group>
+                                <group string="Retenciones y Percepciones">
+                                    <field name="item_66" readonly="1" help="Retenciones IVA período (cargado desde libro)"/>
+                                    <field name="item_55"/>
+                                    <field name="item_67"/>
+                                    <field name="item_56"/>
+                                    <field name="item_57"/>
+                                    <field name="item_68" readonly="1" help="Total percepciones (computado)"/>
+                                </group>
+                                <group string="Ajustes y Totales">
+                                    <field name="item_78"/>
+                                    <field name="item_54"/>
+                                    <field name="item_72" readonly="1" help="Total a pagar (computado)"/>
+                                    <field name="item_73"/>
+                                    <field name="item_74" readonly="1" help="Diferencia (computado)"/>
+                                    <field name="item_75"/>
+                                    <field name="item_76"/>
+                                    <field name="item_77"/>
+                                    <field name="item_58" readonly="1" help="Total ajustes (computado)"/>
+                                    <field name="item_69" readonly="1" help="Saldo final (computado)"/>
+                                    <field name="item_90"/>
+                                </group>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_l10n_ve_vat_return_search" model="ir.ui.view">
+        <field name="name">l10n.ve.vat.return.search</field>
+        <field name="model">l10n.ve.vat.return</field>
+        <field name="arch" type="xml">
+            <search string="Planilla IVA 99030">
+                <field name="period_month"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <filter string="Agrupar por Período" name="groupby_period" context="{'group_by': 'period_month'}"/>
+                <filter string="Agrupar por Compañía" name="groupby_company" context="{'group_by': 'company_id'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_l10n_ve_vat_return" model="ir.actions.act_window">
+        <field name="name">Planilla IVA 99030</field>
+        <field name="res_model">l10n.ve.vat.return</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Cree su primera Planilla IVA 99030
+            </p>
+            <p>
+                Cargue los datos desde el Libro de Compras/Ventas
+                y calcule la autoliquidación automáticamente.
+            </p>
+        </field>
+    </record>
+
+    <menuitem id="menu_l10n_ve_vat_return"
+              name="Planilla IVA 99030"
+              parent="menu_l10n_ve_compliance_root"
+              action="action_l10n_ve_vat_return"
+              sequence="70"
+              groups="account.group_account_manager"/>
+</odoo>

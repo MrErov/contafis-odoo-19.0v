@@ -6,3 +6,6 @@ from . import test_cartelera_status
 from . import test_import_cartelera
 from . import test_cartelera_evidence
 from . import test_compliance_client
+from . import test_vat_book_line
+from . import test_vat_book_generate
+from . import test_vat_return

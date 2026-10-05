@@ -1,0 +1,49 @@
+<odoo>
+    <record id="view_l10n_ve_vat_book_generate_form" model="ir.ui.view">
+        <field name="name">l10n.ve.vat.book.generate.form</field>
+        <field name="model">l10n.ve.vat.book.generate</field>
+        <field name="arch" type="xml">
+            <form string="Generar Libro IVA">
+                <group>
+                    <group>
+                        <field name="period_month" placeholder="YYYY-MM"/>
+                        <field name="company_id" groups="base.group_multi_company"/>
+                        <field name="book_type"/>
+                    </group>
+                    <group>
+                        <field name="state" invisible="1"/>
+                    </group>
+                </group>
+                <footer>
+                    <button name="action_load_moves" string="Cargar Facturas" type="object" class="btn-primary" invisible="state != 'draft'"/>
+                    <button name="action_generate" string="Generar Libro" type="object" class="btn-primary" invisible="state != 'preview'"/>
+                    <button name="action_reset" string="Reiniciar" type="object" class="btn-secondary" invisible="state == 'draft'"/>
+                    <button string="Cerrar" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_l10n_ve_vat_book_generate" model="ir.actions.act_window">
+        <field name="name">Generar Libro IVA</field>
+        <field name="res_model">l10n.ve.vat.book.generate</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Generar Libro de Compras/Ventas
+            </p>
+            <p>
+                Seleccione el período y tipo de libro, luego cargue las facturas
+                y genere las líneas automáticamente.
+            </p>
+        </field>
+    </record>
+
+    <menuitem id="menu_l10n_ve_vat_book_generate"
+              name="Generar Libro IVA"
+              parent="menu_l10n_ve_compliance_root"
+              action="action_l10n_ve_vat_book_generate"
+              sequence="60"
+              groups="account.group_account_manager"/>
+</odoo>

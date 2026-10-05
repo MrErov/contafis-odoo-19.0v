@@ -1,0 +1,268 @@
+from odoo import fields
+from odoo.tests import TransactionCase, tagged
+from odoo.exceptions import UserError, ValidationError
+from odoo.tools import mute_logger
+import psycopg2
+
+
+@tagged('post_install', '-at_install')
+class TestVatReturn(TransactionCase):
+
+    def setUp(self):
+        super().setUp()
+        self.company = self.env.company
+        self.country = self.env['res.country'].search([('code', '=', 'VE')], limit=1)
+        if not self.country:
+            self.country = self.env['res.country'].create({'name': 'Venezuela', 'code': 'VE'})
+        self.company.account_fiscal_country_id = self.country
+
+        self.partner = self.env['res.partner'].create({'name': 'Proveedor Test', 'vat': 'J-12345678-9'})
+        self.customer = self.env['res.partner'].create({'name': 'Cliente Test', 'vat': 'V-98765432-1'})
+
+        self.expense_account = self.env['account.account'].create({
+            'name': 'Gastos Test', 'code': 'TSTEXP', 'account_type': 'expense',
+        })
+        self.income_account = self.env['account.account'].create({
+            'name': 'Ingresos Test', 'code': 'TSTINC', 'account_type': 'income',
+        })
+        self.payable_account = self.env['account.account'].create({
+            'name': 'CxP Test', 'code': 'TSTPAY', 'account_type': 'liability_payable',
+        })
+        self.receivable_account = self.env['account.account'].create({
+            'name': 'CxC Test', 'code': 'TSTREC', 'account_type': 'asset_receivable',
+        })
+
+        self.journal_purchase = self.env['account.journal'].create({
+            'name': 'Facturas Proveedor', 'type': 'purchase', 'code': 'TSTPUR',
+            'default_account_id': self.expense_account.id,
+        })
+        self.journal_sale = self.env['account.journal'].create({
+            'name': 'Facturas Cliente', 'type': 'sale', 'code': 'TSTSAL',
+            'default_account_id': self.income_account.id,
+        })
+
+        self.partner.property_account_payable_id = self.payable_account
+        self.customer.property_account_receivable_id = self.receivable_account
+
+        self.tax_group = self._get_or_create_tax_group()
+
+        self.tax_iva_16 = self.env['account.tax'].create({
+            'name': 'IVA 16%', 'amount': 16.0, 'type_tax_use': 'purchase',
+            'amount_type': 'percent', 'tax_group_id': self.tax_group.id, 'country_id': self.country.id,
+        })
+        self.tax_iva_8 = self.env['account.tax'].create({
+            'name': 'IVA 8%', 'amount': 8.0, 'type_tax_use': 'purchase',
+            'amount_type': 'percent', 'tax_group_id': self.tax_group.id, 'country_id': self.country.id,
+        })
+        self.tax_iva_16_sale = self.env['account.tax'].create({
+            'name': 'IVA 16% Venta', 'amount': 16.0, 'type_tax_use': 'sale',
+            'amount_type': 'percent', 'tax_group_id': self.tax_group.id, 'country_id': self.country.id,
+        })
+
+    def _get_or_create_tax_group(self):
+        group = self.env['account.tax.group'].search([
+            ('company_id', '=', self.company.id)
+        ], limit=1)
+        if not group:
+            group = self.env['account.tax.group'].create({
+                'name': 'IVA', 'country_id': self.country.id,
+            })
+        else:
+            if group.country_id and group.country_id.id != self.country.id:
+                group.write({'country_id': self.country.id})
+            if 'IVA' not in (group.name or '').upper():
+                group.write({'name': 'IVA'})
+        return group
+
+    def _create_in_invoice(self, amount=1000.0, tax_ids=None, date='2026-08-15'):
+        vals = {
+            'move_type': 'in_invoice',
+            'partner_id': self.partner.id,
+            'journal_id': self.journal_purchase.id,
+            'invoice_date': fields.Date.to_date(date),
+            'invoice_line_ids': [(0, 0, {
+                'name': 'Servicio Test',
+                'quantity': 1,
+                'price_unit': amount,
+                'account_id': self.expense_account.id,
+                'tax_ids': [(6, 0, tax_ids or [])],
+            })],
+        }
+        return self.env['account.move'].create(vals)
+
+    def _create_out_invoice(self, amount=1000.0, tax_ids=None, date='2026-08-15'):
+        vals = {
+            'move_type': 'out_invoice',
+            'partner_id': self.customer.id,
+            'journal_id': self.journal_sale.id,
+            'invoice_date': fields.Date.to_date(date),
+            'invoice_line_ids': [(0, 0, {
+                'name': 'Producto Test',
+                'quantity': 1,
+                'price_unit': amount,
+                'account_id': self.income_account.id,
+                'tax_ids': [(6, 0, tax_ids or [])],
+            })],
+        }
+        return self.env['account.move'].create(vals)
+
+    def _generate_book_lines(self, moves=None, period='2026-08'):
+        """Helper: genera líneas de libro para los movimientos dados."""
+        if moves is None:
+            # Fallback: buscar facturas del período
+            year, month = map(int, period.split('-'))
+            date_from = fields.Date.to_date(f'{year}-{month:02d}-01')
+            if month == 12:
+                date_to = fields.Date.to_date(f'{year + 1}-01-01')
+            else:
+                date_to = fields.Date.to_date(f'{year}-{month + 1:02d}-01')
+
+            domain = [
+                ('company_id', '=', self.company.id),
+                ('state', '!=', 'cancel'),
+                ('move_type', 'in', ['in_invoice', 'in_refund', 'out_invoice', 'out_refund']),
+                ('invoice_date', '>=', date_from),
+                ('invoice_date', '<', date_to),
+            ]
+            moves = self.env['account.move'].search(domain)
+
+        for move in moves:
+            self.env['l10n.ve.vat.book.line'].create_from_move(move)
+
+    def test_vat_return_load_from_book(self):
+        """Carga ítems desde vat.book.line."""
+        # Crear facturas
+        in_inv = self._create_in_invoice(1000.0, [self.tax_iva_16.id], '2026-08-10')
+        in_inv.action_post()
+        out_inv = self._create_out_invoice(2000.0, [self.tax_iva_16_sale.id], '2026-08-20')
+        out_inv.action_post()
+
+        self._generate_book_lines(moves=[in_inv, out_inv])
+
+        # Crear planilla y cargar desde libro
+        vat_return = self.env['l10n.ve.vat.return'].create({
+            'period_month': '2026-08',
+            'company_id': self.company.id,
+        })
+        vat_return.action_load_from_book()
+
+        # Verificar débitos (ventas)
+        self.assertEqual(vat_return.item_42, 2000.0)  # base gravada 16%
+        self.assertEqual(vat_return.item_43, 320.0)   # IVA 16% ventas
+
+        # Verificar créditos (compras)
+        self.assertEqual(vat_return.item_33, 1000.0)  # base gravada 16%
+        self.assertEqual(vat_return.item_34, 160.0)   # IVA 16% compras
+
+        # Verificar agregados
+        self.assertEqual(vat_return.item_46, 2000.0)  # total bases ventas
+        self.assertEqual(vat_return.item_47, 320.0)   # total IVA ventas = item_43
+        self.assertEqual(vat_return.item_49, 320.0)   # total débitos
+        self.assertEqual(vat_return.item_35, 1000.0)  # total bases compras
+        self.assertEqual(vat_return.item_36, 160.0)   # total IVA compras
+
+    def test_vat_return_excedente_arrastre(self):
+        """item_60 positivo arrastra a item_20 del mes siguiente."""
+        # IMPORTANTE: Crear planilla septiembre ANTES para que el arrastre en cascada funcione
+        vat_return_sep = self.env['l10n.ve.vat.return'].create({
+            'period_month': '2026-09',
+            'company_id': self.company.id,
+        })
+
+        # Mes 1: créditos > débitos → excedente
+        in_inv = self._create_in_invoice(2000.0, [self.tax_iva_16.id], '2026-08-10')
+        in_inv.action_post()
+        # Sin ventas → débitos = 0
+        self._generate_book_lines(moves=[in_inv])
+
+        vat_return_aug = self.env['l10n.ve.vat.return'].create({
+            'period_month': '2026-08',
+            'company_id': self.company.id,
+        })
+        vat_return_aug.action_load_from_book()
+
+        # item_39 (créditos) = 320, item_49 (débitos) = 0
+        # excedente = 320 - 0 = 320
+        self.assertEqual(vat_return_aug.item_60, 320.0)
+        self.assertEqual(vat_return_aug.item_53, 0.0)
+
+        # item_20 de septiembre debe ser 320 (item_60 de agosto) por arrastre en cascada
+        self.assertEqual(vat_return_sep.item_20, 320.0)
+
+    def test_vat_return_pago_sin_excedente(self):
+        """item_60 negativo → item_53 = pago, no hay arrastre."""
+        # Mes 1: débitos > créditos → pago
+        out_inv = self._create_out_invoice(2000.0, [self.tax_iva_16_sale.id], '2026-08-10')  # IVA 320 débito
+        out_inv.action_post()
+        # Sin compras → créditos = 0
+        self._generate_book_lines(moves=[out_inv])
+
+        vat_return = self.env['l10n.ve.vat.return'].create({
+            'period_month': '2026-08',
+            'company_id': self.company.id,
+        })
+        vat_return.action_load_from_book()
+
+        # item_39 = 0, item_49 = 320 → excedente = -320
+        self.assertEqual(vat_return.item_60, 0.0)
+        self.assertEqual(vat_return.item_53, 320.0)  # pago
+
+    def test_vat_return_unique_constraint(self):
+        """Constraint único por compañía y período - verifica que el constraint SQL existe."""
+        model = self.env['l10n.ve.vat.return']
+        constraints = model._sql_constraints
+        constraint_names = [c[0] for c in constraints]
+        self.assertIn('unique_return', constraint_names)
+        
+        unique_constraint = next(c for c in constraints if c[0] == 'unique_return')
+        self.assertIn('company_id', unique_constraint[1])
+        self.assertIn('period_month', unique_constraint[1])
+
+    def test_vat_return_item_66_retenciones(self):
+        """item_66 carga retenciones direction='by_buyer' (ventas)."""
+        # Venta con retención (direction by_buyer)
+        out_inv = self._create_out_invoice(2000.0, [self.tax_iva_16_sale.id], '2026-08-10')
+        out_inv.action_post()
+
+        # Crear retención en venta (simular que el cliente nos retiene)
+        ret = self.env['l10n.retention'].create({
+            'partner_id': self.customer.id,
+            'amount': 240.0,  # 75% de 320
+            'currency_id': self.company.currency_id.id,
+            'date': fields.Date.today(),
+            'invoice_id': out_inv.id,
+            'state': 'posted',
+        })
+
+        self._generate_book_lines(moves=[out_inv])
+
+        vat_return = self.env['l10n.ve.vat.return'].create({
+            'period_month': '2026-08',
+            'company_id': self.company.id,
+        })
+        vat_return.action_load_from_book()
+
+        # item_66 debe tener la retención de la venta (by_buyer)
+        self.assertEqual(vat_return.item_66, 240.0)
+
+    def test_vat_return_action_calculate(self):
+        """action_calculate recalcula agregados y autoliquidación."""
+        in_inv = self._create_in_invoice(1000.0, [self.tax_iva_16.id], '2026-08-10')
+        in_inv.action_post()
+        out_inv = self._create_out_invoice(2000.0, [self.tax_iva_16_sale.id], '2026-08-20')
+        out_inv.action_post()
+
+        self._generate_book_lines(moves=[in_inv, out_inv])
+
+        vat_return = self.env['l10n.ve.vat.return'].create({
+            'period_month': '2026-08',
+            'company_id': self.company.id,
+        })
+        vat_return.action_load_from_book()
+
+        # Modificar manualmente un item
+        vat_return.item_48 = 50.0
+        vat_return.action_calculate()
+
+        # Debe recalcular item_49 = item_47 + item_48 - item_80
+        self.assertEqual(vat_return.item_49, vat_return.item_47 + 50.0)

@@ -16,6 +16,7 @@ Incluye:
 - Alertas por email y WhatsApp (wa.me).
 - Dashboard de cumplimiento por cliente.
 - Retenciones de IVA/ISLR/IGTF vinculadas a facturas de proveedor.
+- Libro de Compras/Ventas y Planilla IVA 99030 (Forma 99030 SENIAT).
     """,
     'license': 'LGPL-3',
     'depends': ['base', 'account', 'mail', 'l10n_ve'],
@@ -30,6 +31,7 @@ Incluye:
         'data/document_type_cartelera.xml',
         'data/ir_config_parameter_data.xml',
         'report/compliance_report.xml',
+        'report/vat_return_report.xml',
         'views/institution_views.xml',
         'views/obligation_type_views.xml',
         'views/document_views.xml',
@@ -41,6 +43,9 @@ Incluye:
         'views/import_views.xml',
         'views/cartelera_evidence_views.xml',
         'views/cartelera_status_views.xml',
+        'views/vat_book_views.xml',
+        'views/vat_book_generate_views.xml',
+        'views/vat_return_views.xml',
     ],
     'demo': [
         'demo/demo_data.xml',

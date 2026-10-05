@@ -16,3 +16,6 @@ from . import res_partner
 from . import cartelera_status
 from . import cartelera_evidence
 from . import cartelera_evidence_wizard
+from . import vat_book_line
+from . import vat_book_generate
+from . import vat_return

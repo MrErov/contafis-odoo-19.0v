@@ -1,0 +1,152 @@
+<odoo>
+    <record id="view_l10n_ve_vat_book_line_list" model="ir.ui.view">
+        <field name="name">l10n.ve.vat.book.line.list</field>
+        <field name="model">l10n.ve.vat.book.line</field>
+        <field name="arch" type="xml">
+            <list string="Libro de Compras/Ventas" multi_edit="1">
+                <field name="book_type"/>
+                <field name="period_month"/>
+                <field name="partner_id"/>
+                <field name="invoice_number"/>
+                <field name="control_number"/>
+                <field name="operation_code"/>
+                <field name="total_with_vat"/>
+                <field name="base_general" invisible="book_type == 'purchase'"/>
+                <field name="vat_general" invisible="book_type == 'purchase'"/>
+                <field name="base_reduced" invisible="book_type == 'purchase'"/>
+                <field name="vat_reduced" invisible="book_type == 'purchase'"/>
+                <field name="base_no_credit" invisible="book_type == 'sale'"/>
+                <field name="base_not_subject" invisible="book_type == 'sale'"/>
+                <field name="base_not_taxed" invisible="book_type == 'sale'"/>
+                <field name="retention_number"/>
+                <field name="vat_retained"/>
+                <field name="retention_direction"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_l10n_ve_vat_book_line_form" model="ir.ui.view">
+        <field name="name">l10n.ve.vat.book.line.form</field>
+        <field name="model">l10n.ve.vat.book.line</field>
+        <field name="arch" type="xml">
+            <form string="Línea Libro IVA" create="false" edit="false">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="book_type"/>
+                            <field name="period_month"/>
+                            <field name="partner_id"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                        <group>
+                            <field name="invoice_number"/>
+                            <field name="control_number"/>
+                            <field name="operation_code"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Ventas" invisible="book_type != 'sale'">
+                            <group>
+                                <group string="Base General (16%)">
+                                    <field name="base_general"/>
+                                    <field name="vat_general"/>
+                                </group>
+                                <group string="Base Reducida (8%)">
+                                    <field name="base_reduced"/>
+                                    <field name="vat_reduced"/>
+                                </group>
+                                <group string="Otros">
+                                    <field name="base_not_subject"/>
+                                    <field name="base_not_taxed"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Compras" invisible="book_type != 'purchase'">
+                            <group>
+                                <group string="Base General (16%)">
+                                    <field name="base_general"/>
+                                    <field name="vat_general"/>
+                                </group>
+                                <group string="Base Reducida (8%)">
+                                    <field name="base_reduced"/>
+                                    <field name="vat_reduced"/>
+                                </group>
+                                <group string="Sin Crédito / No Sujetos">
+                                    <field name="base_no_credit"/>
+                                    <field name="base_not_subject"/>
+                                    <field name="base_not_taxed"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Retenciones">
+                            <group>
+                                <field name="retention_number"/>
+                                <field name="vat_retained"/>
+                                <field name="retention_direction"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_l10n_ve_vat_book_line_search" model="ir.ui.view">
+        <field name="name">l10n.ve.vat.book.line.search</field>
+        <field name="model">l10n.ve.vat.book.line</field>
+        <field name="arch" type="xml">
+            <search string="Libro de Compras/Ventas">
+                <field name="period_month"/>
+                <field name="partner_id"/>
+                <field name="invoice_number"/>
+                <field name="operation_code"/>
+                <field name="book_type"/>
+                <filter string="Compras" name="filter_purchase" domain="[('book_type', '=', 'purchase')]"/>
+                <filter string="Ventas" name="filter_sale" domain="[('book_type', '=', 'sale')]"/>
+                <separator/>
+                <filter string="Agrupar por Período" name="groupby_period" context="{'group_by': 'period_month'}"/>
+                <filter string="Agrupar por Tipo" name="groupby_type" context="{'group_by': 'book_type'}"/>
+                <filter string="Agrupar por Proveedor/Cliente" name="groupby_partner" context="{'group_by': 'partner_id'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_l10n_ve_vat_book_line_pivot" model="ir.ui.view">
+        <field name="name">l10n.ve.vat.book.line.pivot</field>
+        <field name="model">l10n.ve.vat.book.line</field>
+        <field name="arch" type="xml">
+            <pivot string="Análisis Libro IVA">
+                <field name="book_type" type="row"/>
+                <field name="period_month" type="col"/>
+                <field name="partner_id" type="row"/>
+                <field name="operation_code" type="row"/>
+                <field name="base_general" type="measure"/>
+                <field name="vat_general" type="measure"/>
+                <field name="base_reduced" type="measure"/>
+                <field name="vat_reduced" type="measure"/>
+                <field name="base_no_credit" type="measure"/>
+                <field name="base_not_subject" type="measure"/>
+                <field name="base_not_taxed" type="measure"/>
+                <field name="vat_retained" type="measure"/>
+                <field name="total_with_vat" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="action_l10n_ve_vat_book_line" model="ir.actions.act_window">
+        <field name="name">Libro de Compras/Ventas</field>
+        <field name="res_model">l10n.ve.vat.book.line</field>
+        <field name="view_mode">list,form,pivot</field>
+        <field name="context">{'search_default_group_by_book_type': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Genere el libro desde facturas
+            </p>
+            <p>
+                Use el wizard "Generar Libro IVA" para crear líneas
+                automáticamente desde las facturas del período.
+            </p>
+        </field>
+    </record>
+</odoo>
