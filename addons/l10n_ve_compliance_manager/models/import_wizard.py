@@ -834,6 +834,7 @@ class ImportWizard(models.TransientModel):
                 # Línea para contrib (16%)
                 if has_contrib:
                     line_data = row_data.copy()
+                    line_data['_rate_type'] = 'general'
                     lines_to_create.append(line_data)
                 
                 # Línea para no contrib
