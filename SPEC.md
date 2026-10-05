@@ -25,6 +25,11 @@ para contadores en Venezuela. Multi-cliente (el contador gestiona varias empresa
    retenciones) con validación en 3 niveles y upsert
 7. **[07-cartelera-excel.md](specs/07-cartelera-excel.md)** — Importación de la cartelera fiscal desde
     Excel mensual (36 documentos, snapshot por cliente/mes)
+8. **[08-evidencias.md](specs/08-evidencias.md)** — Evidencia
+   fotográfica de documentos de cartelera + transición
+   automática de estado
+9. **[09-libro-compras-ventas.md](specs/09-libro-compras-ventas.md)**
+   — Libro de Compras/Ventas + Planilla IVA 99030
 
 ## Modelos Principales (resumen)
 - `l10n.ve.compliance.client` — Cliente multi-empresa, score, status, alertas
@@ -78,10 +83,11 @@ para contadores en Venezuela. Multi-cliente (el contador gestiona varias empresa
 - ✅ 63 tests pasando
 
 ### Trabajo Futuro
+- ⬜ Spec 10: Conciliación ISLR
+- ⬜ Fase F: Libro de Compras/Ventas + Planilla IVA 99030
+  (spec 09 lista)
 - ⬜ Importación de asientos contables (account.move)
 - ⬜ Integración MCP Odoo (mart337i/odoo-dev-mcp)
-- ⬜ Conciliación ISLR (nueva spec 08)
-- ⬜ Libro de Compras/Ventas (nueva spec 09)
 
 ## Estado del Portafolio
 
