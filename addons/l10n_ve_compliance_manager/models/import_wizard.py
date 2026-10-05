@@ -6,6 +6,8 @@ from odoo import api, fields, models
 from odoo.exceptions import UserError
 from odoo.tools.translate import _
 
+from .vat_book_headers import VAT_BOOK_HEADER_MAP
+
 
 class ImportWizard(models.TransientModel):
     _name = 'l10n.ve.import.wizard'
@@ -529,6 +531,7 @@ class ImportWizard(models.TransientModel):
         """Carga el archivo Excel, lee headers y crea mapeo automático.
         
         Para import_type='cartelera', usa parser específico y salta a preview directamente.
+        Para import_type='vat_book_purchase'/'vat_book_sale', usa parser específico VAT book.
         """
         self.ensure_one()
         if not self.file:
@@ -536,6 +539,9 @@ class ImportWizard(models.TransientModel):
 
         if self.import_type == 'cartelera':
             return self._load_cartelera_file()
+        
+        if self.import_type in ('vat_book_purchase', 'vat_book_sale'):
+            return self._load_vat_book_file()
 
         import base64
         import openpyxl
@@ -594,6 +600,286 @@ class ImportWizard(models.TransientModel):
         """Carga archivo cartelera: parsea directo y va a preview (sin paso mapping)."""
         self.ensure_one()
         row_count = self._parse_cartelera_excel()
+        self.state = 'preview'
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': 'l10n.ve.import.wizard',
+            'res_id': self.id,
+            'view_mode': 'form',
+            'target': 'new',
+        }
+
+    # --- VAT Book parser methods ---
+
+    def _detect_vat_book_sheet(self, workbook, book_type):
+        """Detecta la hoja COMPRAS o VENTAS en el workbook.
+        
+        Args:
+            workbook: openpyxl workbook
+            book_type: 'purchase' o 'sale'
+            
+        Returns:
+            str: nombre de la hoja detectada
+        """
+        sheet_names = workbook.sheetnames
+        if not sheet_names:
+            raise UserError(_('El archivo Excel no tiene hojas.'))
+        
+        target = 'compras' if book_type == 'purchase' else 'ventas'
+        # Buscar case-insensitive
+        for name in sheet_names:
+            if target in name.lower():
+                return name
+        
+        # Fallback: hoja 0 para compras, hoja 1 para ventas
+        if book_type == 'purchase':
+            return sheet_names[0]
+        else:
+            return sheet_names[1] if len(sheet_names) > 1 else sheet_names[0]
+
+    def _detect_header_row(self, ws):
+        """Detecta la fila de headers buscando 'R.I.F.' o 'Factura' en primeras 15 filas.
+        
+        Args:
+            ws: openpyxl worksheet
+            
+        Returns:
+            int: índice 0-based de la fila header, o None si no encuentra
+        """
+        max_check_row = min(15, ws.max_row or 0)
+        for row_idx in range(1, max_check_row + 1):  # 1-based
+            for cell in ws[row_idx]:
+                if cell.value:
+                    cell_str = str(cell.value).strip().lower()
+                    if 'r.i.f.' in cell_str or 'factura' in cell_str:
+                        return row_idx - 1  # retornar 0-based
+        return None
+
+    def _normalize_header(self, header_str):
+        """Normaliza header: lowercase, quitar puntos, quitar acentos, colapsar espacios."""
+        if not header_str:
+            return ''
+        import unicodedata
+        import re
+        text = str(header_str).strip().lower()
+        # Quitar puntos
+        text = text.replace('.', '')
+        # Normalizar espacios múltiples
+        text = ' '.join(text.split())
+        # Quitar acentos
+        text = unicodedata.normalize('NFKD', text)
+        text = ''.join(c for c in text if not unicodedata.combining(c))
+        return text
+
+    def _parse_vat_book_headers(self, ws, header_row_idx):
+        """Parsea la fila de headers y retorna dict {normalized_header: col_idx_0_based}."""
+        header_map = {}
+        for col_idx, cell in enumerate(ws[header_row_idx + 1]):  # openpyxl 1-based
+            if cell.value:
+                norm = self._normalize_header(cell.value)
+                header_map[norm] = col_idx
+        return header_map
+
+    def _map_header_to_field(self, norm_header, book_type):
+        """Mapa header normalizado → field_name del template."""
+        return VAT_BOOK_HEADER_MAP.get(norm_header)
+
+    def _parse_vat_book_excel(self):
+        """Parsea el Excel de Libro Compras/Ventas y crea líneas l10n.ve.import.line.
+        
+        NO importa, solo crea preview (state='draft').
+        Multi-rate: si base_general > 0 Y base_reduced > 0 → 2 líneas separadas.
+        """
+        self.ensure_one()
+        if not self.file:
+            raise UserError(_('Debe subir un archivo Excel.'))
+        
+        import base64
+        import openpyxl
+        from io import BytesIO
+        
+        file_data = base64.b64decode(self.file)
+        wb = openpyxl.load_workbook(BytesIO(file_data), read_only=True, data_only=True)
+        
+        # Determinar book_type desde import_type
+        book_type = 'purchase' if self.import_type == 'vat_book_purchase' else 'sale'
+        
+        # Detectar hoja
+        sheet_name = self._detect_vat_book_sheet(wb, book_type)
+        self.sheet_name = sheet_name
+        ws = wb[sheet_name]
+        
+        # Detectar fila header
+        header_row_idx = self._detect_header_row(ws)
+        if header_row_idx is None:
+            raise UserError(_(
+                "No se encontró la fila de headers (buscando 'R.I.F.' o 'Factura' "
+                "en las primeras 15 filas) en la hoja '%s'."
+            ) % sheet_name)
+        
+        # Parsear headers
+        header_map = self._parse_vat_book_headers(ws, header_row_idx)
+        
+        # Mapear headers a fields
+        field_map = {}  # {field_name: col_idx}
+        for norm_header, col_idx in header_map.items():
+            field_name = self._map_header_to_field(norm_header, book_type)
+            if field_name:
+                field_map[field_name] = col_idx
+        
+        # Detectar period_month en filas anteriores al header (opcional)
+        period_month = None
+        for row_idx in range(1, header_row_idx + 1):
+            for cell in ws[row_idx]:
+                if cell.value and isinstance(cell.value, str):
+                    val = cell.value.strip()
+                    # Buscar patrón "Mes AGOSTO 2026" o "Período: Agosto 2026"
+                    import re
+                    match = re.search(r'(?:mes|per[ií]odo)[\s:]*(\w+)\s+(\d{4})', val, re.IGNORECASE)
+                    if match:
+                        month_name, year = match.groups()
+                        month_map = {
+                            'enero': '01', 'febrero': '02', 'marzo': '03', 'abril': '04',
+                            'mayo': '05', 'junio': '06', 'julio': '07', 'agosto': '08',
+                            'septiembre': '09', 'octubre': '10', 'noviembre': '11', 'diciembre': '12',
+                        }
+                        month = month_map.get(month_name.lower())
+                        if month:
+                            period_month = f'{year}-{month}'
+                            break
+            if period_month:
+                break
+        
+        if period_month:
+            self.period_month = period_month
+        
+        # Leer filas de datos
+        data_start_row = header_row_idx + 2  # 1-based (header_row_idx es 0-based)
+        max_data_row = min(ws.max_row or 0, data_start_row + 500)
+        
+        row_count = 0
+        for row_idx in range(data_start_row, max_data_row + 1):
+            row = ws[row_idx]
+            if not row:
+                continue
+            
+            # Extraer valores de la fila según field_map
+            row_data = {}
+            for field_name, col_idx in field_map.items():
+                cell = row[col_idx] if col_idx < len(row) else None
+                value = cell.value if cell else None
+                
+                # Convertir números con _parse_number
+                if field_name in ('base_general', 'vat_general', 'base_reduced', 'vat_reduced',
+                                  'base_not_subject', 'base_no_credit', 'base_import_16',
+                                  'vat_import_16', 'vat_retained_vendor', 'vat_retained_third',
+                                  'anticipo_import', 'base_not_taxed', 'base_general_non_contrib',
+                                  'vat_general_non_contrib', 'base_general_contrib',
+                                  'vat_general_contrib', 'vat_retained_buyer'):
+                    value = self._parse_number(value)
+                
+                row_data[field_name] = value
+            
+            # Saltar filas vacías (sin RIF y sin número factura)
+            if not row_data.get('partner_vat') and not row_data.get('invoice_number'):
+                continue
+            
+            # Saltar filas anuladas
+            invoice_num = str(row_data.get('invoice_number') or '').strip().upper()
+            if 'ANULADO' in invoice_num:
+                continue
+            
+            # Multi-rate: crear línea separada por cada tasa con base > 0
+            lines_to_create = []
+            
+            # Determinar qué tasas tienen base > 0
+            has_general = (row_data.get('base_general') or 0) > 0
+            has_reduced = (row_data.get('base_reduced') or 0) > 0
+            has_import = (row_data.get('base_import_16') or 0) > 0
+            has_non_contrib = (row_data.get('base_general_non_contrib') or 0) > 0
+            has_contrib = (row_data.get('base_general_contrib') or 0) > 0
+            has_not_subject = (row_data.get('base_not_subject') or 0) > 0
+            has_no_credit = (row_data.get('base_no_credit') or 0) > 0
+            has_not_taxed = (row_data.get('base_not_taxed') or 0) > 0
+            
+            # Para COMPRAS: general, reduced, import, no_subject, no_credit
+            # Para VENTAS: contrib, non_contrib, not_subject, not_taxed
+            
+            if book_type == 'purchase':
+                # Línea para alícuota general (16%) + importación
+                if has_general or has_import:
+                    line_data = row_data.copy()
+                    line_data['_rate_type'] = 'general'
+                    lines_to_create.append(line_data)
+                
+                # Línea para alícuota reducida (8%)
+                if has_reduced:
+                    line_data = row_data.copy()
+                    line_data['_rate_type'] = 'reduced'
+                    lines_to_create.append(line_data)
+                
+                # Línea para no sujetas
+                if has_not_subject:
+                    line_data = row_data.copy()
+                    line_data['_rate_type'] = 'not_subject'
+                    lines_to_create.append(line_data)
+                
+                # Línea para sin crédito
+                if has_no_credit:
+                    line_data = row_data.copy()
+                    line_data['_rate_type'] = 'no_credit'
+                    lines_to_create.append(line_data)
+                    
+            else:  # sale
+                # Línea para contrib (16%)
+                if has_contrib:
+                    line_data = row_data.copy()
+                    lines_to_create.append(line_data)
+                
+                # Línea para no contrib
+                if has_non_contrib:
+                    line_data = row_data.copy()
+                    line_data['_rate_type'] = 'non_contrib'
+                    lines_to_create.append(line_data)
+                
+                # Línea para no sujetas
+                if has_not_subject:
+                    line_data = row_data.copy()
+                    line_data['_rate_type'] = 'not_subject'
+                    lines_to_create.append(line_data)
+                
+                # Línea para no gravadas
+                if has_not_taxed:
+                    line_data = row_data.copy()
+                    line_data['_rate_type'] = 'not_taxed'
+                    lines_to_create.append(line_data)
+            
+            # Si no hay ninguna base > 0, crear una línea genérica
+            if not lines_to_create:
+                lines_to_create = [row_data]
+            
+            # Crear líneas
+            for line_data in lines_to_create:
+                self.env['l10n.ve.import.line'].create({
+                    'wizard_id': self.id,
+                    'row_index': row_count + 1,
+                    'data': line_data,
+                    'state': 'draft',
+                })
+                row_count += 1
+        
+        if row_count == 0:
+            raise UserError(_(
+                "No se encontraron datos válidos en la hoja '%s'. "
+                "Verifique que las columnas R.I.F. y Número Factura tengan datos."
+            ) % sheet_name)
+        
+        return row_count
+
+    def _load_vat_book_file(self):
+        """Carga archivo Libro Compras/Ventas: parsea directo y va a preview."""
+        self.ensure_one()
+        row_count = self._parse_vat_book_excel()
         self.state = 'preview'
         return {
             'type': 'ir.actions.act_window',

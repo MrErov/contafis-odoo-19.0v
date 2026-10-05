@@ -1,3 +1,7 @@
+from io import BytesIO
+import base64
+import openpyxl
+
 from odoo.tests import TransactionCase, tagged
 
 
@@ -8,6 +12,119 @@ class TestImportVatBook(TransactionCase):
     def setUp(self):
         super().setUp()
         self.Wizard = self.env['l10n.ve.import.wizard']
+
+    def _create_vat_book_excel(self, rows_data, book_type='purchase', sheet_name=None, header_row=3):
+        """
+        Genera un Excel en memoria con estructura de Libro Compras/Ventas.
+        
+        Args:
+            rows_data: Lista de dicts con datos de facturas
+            book_type: 'purchase' o 'sale'
+            sheet_name: Nombre de la hoja (default: COMPRAS o VENTAS)
+            header_row: Fila 1-based donde están los headers
+            
+        Returns:
+            bytes: Contenido del archivo xlsx
+        """
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        
+        if sheet_name is None:
+            ws.title = 'COMPRAS' if book_type == 'purchase' else 'VENTAS'
+        else:
+            ws.title = sheet_name
+        
+        # Filas previas al header (pueden tener título, período, etc.)
+        if header_row > 1:
+            ws.cell(row=1, column=1, value='LIBRO DE COMPRAS' if book_type == 'purchase' else 'LIBRO DE VENTAS')
+            ws.cell(row=2, column=1, value='Mes AGOSTO 2026')
+        
+        # Headers según tipo
+        if book_type == 'purchase':
+            headers = [
+                'R.I.F.',
+                'Nombre o Razon Social',
+                'Numero de Factura',
+                'Numero de Control',
+                'Fecha',
+                'Base Alicuota General 16%',
+                'I.V.A. Alicuota General 16%',
+                'Base Alicuota Reducida',
+                'I.V.A. Alicuota Reducida',
+                'Compras NO SUJETAS',
+                'Compras sin Derecho a Credito (Nacional)',
+                'Base Importación 16%',
+                'I.V.A. de importación 16%',
+                'Nº Comprob. Retención 75%',
+                'IVA Retenido (al Vendedor)',
+                'IVA Retenido (a Terceros)',
+                'Anticipo IVA (Importación)',
+            ]
+        else:
+            headers = [
+                'R.I.F',
+                'Nombre o Razon Social',
+                'Numero de Factura 0 reporte Z',
+                'Numero de Control',
+                'Fecha de la Factura',
+                'Ventas internas No sujetas',
+                'Ventas internas no gravadas (No Contrib)',
+                'Base Imponible (No Contrib)',
+                'Impuesto IVA (No Contrib)',
+                'Base Imponible (Contrib)',
+                'Impuesto IVA (Contrib)',
+                'Nº Comprob. Retención 75% IVA',
+                'Iva Retenido (por comprador)',
+            ]
+        
+        # Escribir headers en la fila indicada
+        for col_idx, header in enumerate(headers, 1):
+            ws.cell(row=header_row, column=col_idx, value=header)
+        
+        # Datos
+        for row_idx, row_data in enumerate(rows_data, header_row + 1):
+            if book_type == 'purchase':
+                ws.cell(row=row_idx, column=1, value=row_data.get('partner_vat'))
+                ws.cell(row=row_idx, column=2, value=row_data.get('partner_name'))
+                ws.cell(row=row_idx, column=3, value=row_data.get('invoice_number'))
+                ws.cell(row=row_idx, column=4, value=row_data.get('control_number'))
+                ws.cell(row=row_idx, column=5, value=row_data.get('invoice_date'))
+                ws.cell(row=row_idx, column=6, value=row_data.get('base_general'))
+                ws.cell(row=row_idx, column=7, value=row_data.get('vat_general'))
+                ws.cell(row=row_idx, column=8, value=row_data.get('base_reduced'))
+                ws.cell(row=row_idx, column=9, value=row_data.get('vat_reduced'))
+                ws.cell(row=row_idx, column=10, value=row_data.get('base_not_subject'))
+                ws.cell(row=row_idx, column=11, value=row_data.get('base_no_credit'))
+                ws.cell(row=row_idx, column=12, value=row_data.get('base_import_16'))
+                ws.cell(row=row_idx, column=13, value=row_data.get('vat_import_16'))
+                ws.cell(row=row_idx, column=14, value=row_data.get('retention_number'))
+                ws.cell(row=row_idx, column=15, value=row_data.get('vat_retained_vendor'))
+                ws.cell(row=row_idx, column=16, value=row_data.get('vat_retained_third'))
+                ws.cell(row=row_idx, column=17, value=row_data.get('anticipo_import'))
+            else:
+                ws.cell(row=row_idx, column=1, value=row_data.get('partner_vat'))
+                ws.cell(row=row_idx, column=2, value=row_data.get('partner_name'))
+                ws.cell(row=row_idx, column=3, value=row_data.get('invoice_number'))
+                ws.cell(row=row_idx, column=4, value=row_data.get('control_number'))
+                ws.cell(row=row_idx, column=5, value=row_data.get('invoice_date'))
+                ws.cell(row=row_idx, column=6, value=row_data.get('base_not_subject'))
+                ws.cell(row=row_idx, column=7, value=row_data.get('base_not_taxed'))
+                ws.cell(row=row_idx, column=8, value=row_data.get('base_general_non_contrib'))
+                ws.cell(row=row_idx, column=9, value=row_data.get('vat_general_non_contrib'))
+                ws.cell(row=row_idx, column=10, value=row_data.get('base_general_contrib'))
+                ws.cell(row=row_idx, column=11, value=row_data.get('vat_general_contrib'))
+                ws.cell(row=row_idx, column=12, value=row_data.get('retention_number'))
+                ws.cell(row=row_idx, column=13, value=row_data.get('vat_retained_buyer'))
+        
+        output = BytesIO()
+        wb.save(output)
+        return output.getvalue()
+
+    def _create_wizard(self, import_type='vat_book_purchase'):
+        """Helper para crear wizard con datos por defecto."""
+        return self.Wizard.create({
+            'import_type': import_type,
+        })
 
     def test_import_types_exist(self):
         """Verifica que los nuevos import_type están en la selección."""
@@ -31,3 +148,98 @@ class TestImportVatBook(TransactionCase):
         # sheet_name es Char readonly
         self.assertEqual(wizard._fields['sheet_name'].type, 'char')
         self.assertTrue(wizard._fields['sheet_name'].readonly)
+
+    def test_detect_vat_book_sheet(self):
+        """Verifica detección de hoja COMPRAS/VENTAS."""
+        wizard = self._create_wizard('vat_book_purchase')
+        
+        # Crear Excel con 2 hojas
+        wb = openpyxl.Workbook()
+        ws1 = wb.active
+        ws1.title = 'COMPRAS'
+        ws2 = wb.create_sheet('VENTAS')
+        
+        output = BytesIO()
+        wb.save(output)
+        excel_content = output.getvalue()
+        
+        # Test purchase
+        import base64
+        wb_test = openpyxl.load_workbook(BytesIO(excel_content), read_only=True)
+        sheet = wizard._detect_vat_book_sheet(wb_test, 'purchase')
+        self.assertEqual(sheet, 'COMPRAS')
+        
+        # Test sale
+        wb_test = openpyxl.load_workbook(BytesIO(excel_content), read_only=True)
+        sheet = wizard._detect_vat_book_sheet(wb_test, 'sale')
+        self.assertEqual(sheet, 'VENTAS')
+        
+        # Test fallback purchase (hoja 0)
+        wb2 = openpyxl.Workbook()
+        wb2.active.title = 'Hoja1'
+        wb2.create_sheet('Hoja2')
+        output2 = BytesIO()
+        wb2.save(output2)
+        wb_test2 = openpyxl.load_workbook(BytesIO(output2.getvalue()), read_only=True)
+        sheet = wizard._detect_vat_book_sheet(wb_test2, 'purchase')
+        self.assertEqual(sheet, 'Hoja1')
+        
+        # Test fallback sale (hoja 1)
+        wb_test2 = openpyxl.load_workbook(BytesIO(output2.getvalue()), read_only=True)
+        sheet = wizard._detect_vat_book_sheet(wb_test2, 'sale')
+        self.assertEqual(sheet, 'Hoja2')
+
+    def test_parse_vat_book_headers(self):
+        """Verifica detección de fila header y mapeo de columnas."""
+        wizard = self._create_wizard('vat_book_purchase')
+        
+        # Crear Excel con header en fila 7
+        rows_data = [
+            {
+                'partner_vat': 'J-31527189-4',
+                'partner_name': 'Empresa Test',
+                'invoice_number': '001',
+                'control_number': '001',
+                'invoice_date': '15/08/2026',
+                'base_general': 1000,
+                'vat_general': 160,
+                'base_reduced': 0,
+                'vat_reduced': 0,
+                'base_not_subject': 0,
+                'base_no_credit': 0,
+                'base_import_16': 0,
+                'vat_import_16': 0,
+                'retention_number': '',
+                'vat_retained_vendor': 0,
+                'vat_retained_third': 0,
+                'anticipo_import': 0,
+            }
+        ]
+        
+        excel_content = self._create_vat_book_excel(rows_data, book_type='purchase', header_row=7)
+        excel_b64 = base64.b64encode(excel_content)
+        
+        wizard.write({
+            'file': excel_b64,
+            'filename': 'test_vat_book.xlsx',
+        })
+        
+        # Cargar archivo (esto llama _parse_vat_book_excel internamente)
+        wizard.action_load_file()
+        
+        # Verificar que se detectó la hoja
+        self.assertEqual(wizard.sheet_name, 'COMPRAS')
+        
+        # Verificar que se crearon líneas de preview
+        self.assertEqual(len(wizard.line_ids), 1)
+        
+        # Verificar datos de la línea
+        line = wizard.line_ids[0]
+        self.assertEqual(line.data['partner_vat'], 'J-31527189-4')
+        self.assertEqual(line.data['partner_name'], 'Empresa Test')
+        self.assertEqual(line.data['invoice_number'], '001')
+        self.assertEqual(line.data['base_general'], 1000.0)
+        self.assertEqual(line.data['vat_general'], 160.0)
+        
+        # Verificar period_month detectado
+        self.assertEqual(wizard.period_month, '2026-08')

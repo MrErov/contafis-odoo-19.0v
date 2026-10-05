@@ -18,4 +18,5 @@ from . import cartelera_evidence
 from . import cartelera_evidence_wizard
 from . import vat_book_line
 from . import vat_book_generate
+from . import vat_book_headers
 from . import vat_return
