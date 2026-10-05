@@ -63,6 +63,11 @@
                                            invisible="import_type != 'cartelera'"/>
                                     <field name="cartelera_month"
                                            invisible="import_type != 'cartelera'"/>
+                                    <field name="period_month"
+                                           invisible="import_type not in ('vat_book_purchase', 'vat_book_sale')"/>
+                                    <field name="sheet_name"
+                                           invisible="import_type not in ('vat_book_purchase', 'vat_book_sale')"
+                                           readonly="1"/>
                                 </group>
                                 <div class="alert alert-info mt-3" role="status">
                                     <strong>Instrucciones:</strong>

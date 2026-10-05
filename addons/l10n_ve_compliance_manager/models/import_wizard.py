@@ -17,6 +17,8 @@ class ImportWizard(models.TransientModel):
         ('client', 'Clientes'),
         ('retention', 'Retenciones'),
         ('cartelera', 'Cartelera Fiscal'),
+        ('vat_book_purchase', 'Libro de Compras (IVA)'),
+        ('vat_book_sale', 'Libro de Ventas (IVA)'),
     ]
 
     import_type = fields.Selection(
@@ -76,6 +78,17 @@ class ImportWizard(models.TransientModel):
         string='Headers No Reconocidos',
         readonly=True,
         help='Columnas del Excel que no coincidieron con ningún tipo de documento'
+    )
+
+    # Campos para importación de Libro de Compras/Ventas
+    period_month = fields.Char(
+        string='Período (YYYY-MM)',
+        help='Mes del libro a importar (ej. 2026-08). Prioridad: header Excel > este campo > nombre archivo.',
+    )
+    sheet_name = fields.Char(
+        string='Hoja Detectada',
+        readonly=True,
+        help='Hoja del Excel detectada automáticamente (COMPRAS/VENTAS)',
     )
 
     # Datos para plantillas por tipo de importación
@@ -147,6 +160,48 @@ class ImportWizard(models.TransientModel):
                     ('state', 'selection', 'Estado', False,
                      [('draft', 'Borrador'), ('posted', 'Publicada'),
                       ('cancel', 'Cancelada')]),
+                ]
+            },
+            'vat_book_purchase': {
+                'model': 'l10n.ve.vat.book.line',
+                'fields': [
+                    ('partner_vat', 'char', 'R.I.F.', True),
+                    ('partner_name', 'char', 'Razón Social', True),
+                    ('invoice_type', 'char', 'Tipo Doc', False),
+                    ('invoice_number', 'char', 'Número Factura', True),
+                    ('control_number', 'char', 'Número Control', False),
+                    ('invoice_date', 'date', 'Fecha', True),
+                    ('base_general', 'float', 'Base Alicuota General 16%', False),
+                    ('vat_general', 'float', 'I.V.A. Alicuota General 16%', False),
+                    ('base_reduced', 'float', 'Base Alicuota Reducida', False),
+                    ('vat_reduced', 'float', 'I.V.A. Alicuota Reducida', False),
+                    ('base_not_subject', 'float', 'Compras NO SUJETAS', False),
+                    ('base_no_credit', 'float', 'Compras sin Derecho a Crédito (Nacional)', False),
+                    ('base_import_16', 'float', 'Base Importación 16%', False),
+                    ('vat_import_16', 'float', 'I.V.A. de importación 16%', False),
+                    ('retention_number', 'char', 'Nº Comprob. Retención 75%', False),
+                    ('vat_retained_vendor', 'float', 'IVA Retenido (al Vendedor)', False),
+                    ('vat_retained_third', 'float', 'IVA Retenido (a Terceros)', False),
+                    ('anticipo_import', 'float', 'Anticipo IVA (Importación)', False),
+                ]
+            },
+            'vat_book_sale': {
+                'model': 'l10n.ve.vat.book.line',
+                'fields': [
+                    ('partner_vat', 'char', 'R.I.F.', True),
+                    ('partner_name', 'char', 'Razón Social', True),
+                    ('invoice_type', 'char', 'Tipo Doc', False),
+                    ('invoice_number', 'char', 'Número Factura', True),
+                    ('control_number', 'char', 'Número Control', False),
+                    ('invoice_date', 'date', 'Fecha', True),
+                    ('base_not_subject', 'float', 'Ventas internas No sujetas', False),
+                    ('base_not_taxed', 'float', 'Ventas internas no gravadas (No Contrib)', False),
+                    ('base_general_non_contrib', 'float', 'Base Imponible (No Contrib)', False),
+                    ('vat_general_non_contrib', 'float', 'Impuesto IVA (No Contrib)', False),
+                    ('base_general_contrib', 'float', 'Base Imponible (Contrib)', False),
+                    ('vat_general_contrib', 'float', 'Impuesto IVA (Contrib)', False),
+                    ('retention_number', 'char', 'Nº Comprob. Retención 75% IVA', False),
+                    ('vat_retained_buyer', 'float', 'Iva Retenido (por comprador)', False),
                 ]
             },
         }

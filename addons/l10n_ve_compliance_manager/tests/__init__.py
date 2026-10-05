@@ -9,3 +9,4 @@ from . import test_compliance_client
 from . import test_vat_book_line
 from . import test_vat_book_generate
 from . import test_vat_return
+from . import test_import_vat_book
