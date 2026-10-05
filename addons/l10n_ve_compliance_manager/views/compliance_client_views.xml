@@ -124,13 +124,19 @@
                 <field name="compliance_status"/>
                 <field name="alert_ids"/>
                 <field name="pending_alert_count"/>
+                <field name="document_score"/>
+                <field name="partner_image_1920"/>
+                <field name="cartelera_html"/>
                 <templates>
                     <t t-name="card">
                         <div t-attf-class="oe_kanban_global_click">
                             <div class="o_kanban_record_top">
-                                <div class="o_kanban_heading">
-                                    <strong><field name="partner_id"/></strong>
-                                    <div class="text-muted"><field name="name"/></div>
+                                <div class="o_kanban_heading d-flex align-items-center">
+                                    <field name="partner_image_1920" widget="image" options="{'size': [40, 40]}" class="me-2"/>
+                                    <div>
+                                        <strong><field name="partner_id"/></strong>
+                                        <div class="text-muted"><field name="name"/></div>
+                                    </div>
                                 </div>
                                 <field name="compliance_status"
                                        widget="badge"
@@ -140,7 +146,7 @@
                             </div>
                             <div class="oe_kanban_card_meta">
                                 <span class="o_kanban_record_title">
-                                    Puntuación: <field name="compliance_score"/>
+                                    Puntuación: <field name="compliance_score"/> / Doc: <field name="document_score"/>
                                 </span>
                             </div>
                             <div class="oe_kanban_bottom_right">
@@ -150,6 +156,9 @@
                             </div>
                             <div class="oe_kanban_bottom_left o_kanban_redline">
                                 <field name="rif"/>
+                            </div>
+                            <div class="mt-2 small text-muted">
+                                <t t-out="record.cartelera_html"/>
                             </div>
                         </div>
                     </t>
