@@ -13,7 +13,7 @@ Reemplazar los Excel de libro de compras/ventas y Planilla IVA 99030 que los con
 
 **No incluye:**
 - Envío electrónico al SENIAT (el portal no acepta archivos)
-- Conciliación ISLR (va en spec 10 separada)
+- Conciliación ISLR (va en spec 11 separada)
 - Importación desde Excel de libros existentes (fase futura)
 
 ## Modelos involucrados
@@ -84,7 +84,7 @@ Reemplazar los Excel de libro de compras/ventas y Planilla IVA 99030 que los con
 - Providencia SNAT/2025/82 (formularios vigentes)
 
 ## Trabajo Futuro
-- Conciliación ISLR (spec 10)
+- Conciliación ISLR (spec 11)
 - Envío electrónico si SENIAT habilita API
 - Importación de libros históricos desde Excel
 
@@ -97,3 +97,9 @@ Reemplazar los Excel de libro de compras/ventas y Planilla IVA 99030 que los con
 - **Sin detección automática de exportación** (l10n_latam_invoice_document no está instalado). TODO Fase G.
 - **item_43 es obligatorio** (IVA ventas 16%) además de item_42 (base)
 - **action_load_from_book()** es no-op si no hay líneas del período (no lanza UserError)
+
+## Importación desde Excel (canal alterno)
+
+Además del canal Odoo-first (account.move → wizard → libro), el
+sistema permite importar el libro directamente desde el Excel que
+usa el contador. Ver spec 10.
