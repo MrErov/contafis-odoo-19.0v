@@ -243,3 +243,124 @@ class TestImportVatBook(TransactionCase):
         
         # Verificar period_month detectado
         self.assertEqual(wizard.period_month, '2026-08')
+
+    def test_import_vat_book_purchase_creates_line(self):
+        """Importa COMPRAS base_general > 0 → vat.book.line operation_code='33'."""
+        wizard = self._create_wizard('vat_book_purchase')
+        rows = [{
+            'partner_vat': 'J-31527189-4',
+            'partner_name': 'Proveedor Test',
+            'invoice_number': '001',
+            'control_number': '001',
+            'invoice_date': '15/08/2026',
+            'base_general': 1000,
+            'vat_general': 160,
+            'base_reduced': 0,
+            'vat_reduced': 0,
+            'base_not_subject': 0,
+            'base_no_credit': 0,
+            'base_import_16': 0,
+            'vat_import_16': 0,
+            'retention_number': '',
+            'vat_retained_vendor': 0,
+            'vat_retained_third': 0,
+            'anticipo_import': 0,
+        }]
+        excel = self._create_vat_book_excel(rows, book_type='purchase')
+        wizard.write({'file': base64.b64encode(excel), 'filename': 'test.xlsx'})
+        wizard.action_load_file()
+        wizard.action_import()
+        
+        lines = self.env['l10n.ve.vat.book.line'].search([
+            ('invoice_number', '=', '001'),
+            ('period_month', '=', '2026-08'),
+        ])
+        self.assertEqual(len(lines), 1)
+        self.assertEqual(lines.operation_code, '33')
+        self.assertEqual(lines.base_general, 1000)
+        self.assertEqual(lines.vat_general, 160)
+        self.assertEqual(lines.retention_direction, 'to_vendor')
+
+    def test_import_vat_book_sale_creates_line(self):
+        """Importa VENTAS base_general_contrib > 0 → vat.book.line operation_code='42'."""
+        wizard = self._create_wizard('vat_book_sale')
+        wizard.period_month = '2026-08'  # Fallback explícito
+        rows = [{
+            'partner_vat': 'V-12345678-5',
+            'partner_name': 'Cliente Test',
+            'invoice_number': '001-SALE',
+            'control_number': '001',
+            'invoice_date': '15/08/2026',
+            'base_not_subject': 0,
+            'base_not_taxed': 0,
+            'base_general_non_contrib': 0,
+            'vat_general_non_contrib': 0,
+            'base_general_contrib': 1000,
+            'vat_general_contrib': 160,
+            'retention_number': '',
+            'vat_retained_buyer': 50,
+        }]
+        excel = self._create_vat_book_excel(rows, book_type='sale')
+        wizard.write({'file': base64.b64encode(excel), 'filename': 'test.xlsx'})
+        wizard.action_load_file()
+        wizard.action_import()
+        
+        lines = self.env['l10n.ve.vat.book.line'].search([
+            ('invoice_number', '=', '001-SALE'),
+            ('period_month', '=', '2026-08'),
+        ])
+        self.assertEqual(len(lines), 1)
+        self.assertEqual(lines.operation_code, '42')
+        self.assertEqual(lines.base_general, 1000)
+        self.assertEqual(lines.vat_general, 160)
+        self.assertEqual(lines.retention_direction, 'by_buyer')
+        self.assertEqual(lines.vat_retained, 50)
+
+    def test_import_vat_book_split_retention(self):
+        """Compra con vat_retained_vendor > 0 Y vat_retained_third > 0 → 2 líneas."""
+        wizard = self._create_wizard('vat_book_purchase')
+        rows = [{
+            'partner_vat': 'J-31527189-4',
+            'partner_name': 'Proveedor Split',
+            'invoice_number': '002',
+            'control_number': '002',
+            'invoice_date': '20/08/2026',
+            'base_general': 2000,
+            'vat_general': 320,
+            'base_reduced': 0,
+            'vat_reduced': 0,
+            'base_not_subject': 0,
+            'base_no_credit': 0,
+            'base_import_16': 0,
+            'vat_import_16': 0,
+            'retention_number': 'RET-001',
+            'vat_retained_vendor': 100,
+            'vat_retained_third': 50,
+            'anticipo_import': 0,
+        }]
+        excel = self._create_vat_book_excel(rows, book_type='purchase')
+        wizard.write({'file': base64.b64encode(excel), 'filename': 'test.xlsx'})
+        wizard.action_load_file()
+        wizard.action_import()
+        
+        # Deben crearse 2 líneas: una to_vendor, una to_third
+        lines = self.env['l10n.ve.vat.book.line'].search([
+            ('invoice_number', '=', '002'),
+            ('period_month', '=', '2026-08'),
+        ])
+        self.assertEqual(len(lines), 2, 'Debe crear 2 líneas por split de retención')
+        
+        # Verificar dirección to_vendor
+        line_vendor = lines.filtered(lambda l: l.retention_direction == 'to_vendor')
+        self.assertEqual(len(line_vendor), 1)
+        self.assertEqual(line_vendor.vat_retained, 100)
+        self.assertEqual(line_vendor.operation_code, '33')
+        
+        # Verificar dirección to_third
+        line_third = lines.filtered(lambda l: l.retention_direction == 'to_third')
+        self.assertEqual(len(line_third), 1)
+        self.assertEqual(line_third.vat_retained, 50)
+        self.assertEqual(line_third.operation_code, '33')
+        
+        # Ambas con mismo operation_code pero distinta direction → no colisionan
+        self.assertNotEqual(line_vendor.id, line_third.id)

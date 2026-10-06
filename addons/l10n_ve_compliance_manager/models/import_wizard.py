@@ -651,7 +651,8 @@ class ImportWizard(models.TransientModel):
             for cell in ws[row_idx]:
                 if cell.value:
                     cell_str = str(cell.value).strip().lower()
-                    if 'r.i.f.' in cell_str or 'factura' in cell_str:
+                    # 'R.I.F.' (con punto final) o 'R.I.F' (sin punto final) o 'Factura'
+                    if 'r.i.f.' in cell_str or 'r.i.f' in cell_str or 'factura' in cell_str:
                         return row_idx - 1  # retornar 0-based
         return None
 
@@ -889,6 +890,181 @@ class ImportWizard(models.TransientModel):
             'view_mode': 'form',
             'target': 'new',
         }
+
+    def _get_vat_book_operation_code(self, rate_type, book_type):
+        """Mapea _rate_type → operation_code SENIAT."""
+        if book_type == 'purchase':
+            if rate_type in ('general',):
+                return '33'
+            elif rate_type == 'reduced':
+                return '333'
+            else:  # not_subject, no_credit
+                return '30'
+        else:  # sale
+            if rate_type in ('general', 'non_contrib'):
+                return '42'
+            else:  # not_subject, not_taxed
+                return '40'
+
+    def _build_vat_book_vals(self, data, book_type, partner_id, operation_code, retention_direction):
+        """Construye vals para UNA línea vat.book.line según _rate_type."""
+        rate = data.get('_rate_type', 'general')
+        
+        base_general = vat_general = base_reduced = vat_reduced = 0.0
+        base_no_credit = base_not_subject = base_not_taxed = 0.0
+        
+        if book_type == 'purchase':
+            if rate == 'general':
+                base_general = (data.get('base_general') or 0) + \
+                               (data.get('base_import_16') or 0)
+                vat_general = (data.get('vat_general') or 0) + \
+                              (data.get('vat_import_16') or 0)
+            elif rate == 'reduced':
+                base_reduced = data.get('base_reduced') or 0
+                vat_reduced = data.get('vat_reduced') or 0
+            elif rate == 'no_credit':
+                base_no_credit = data.get('base_no_credit') or 0
+            elif rate == 'not_subject':
+                base_not_subject = data.get('base_not_subject') or 0
+        else:  # sale
+            if rate in ('general', 'non_contrib'):
+                if rate == 'general':
+                    base_general = data.get('base_general_contrib') or 0
+                    vat_general = data.get('vat_general_contrib') or 0
+                else:  # non_contrib
+                    base_general = data.get('base_general_non_contrib') or 0
+                    vat_general = data.get('vat_general_non_contrib') or 0
+            elif rate == 'not_subject':
+                base_not_subject = data.get('base_not_subject') or 0
+            elif rate == 'not_taxed':
+                base_not_taxed = data.get('base_not_taxed') or 0
+        
+        total_with_vat = (base_general + vat_general + base_reduced + vat_reduced +
+                          base_no_credit + base_not_subject + base_not_taxed)
+        
+        return {
+            'book_type': book_type,
+            'partner_id': partner_id,
+            'invoice_number': data.get('invoice_number') or '',
+            'control_number': data.get('control_number') or '',
+            'operation_code': operation_code,
+            'total_with_vat': total_with_vat,
+            'base_general': base_general,
+            'vat_general': vat_general,
+            'base_reduced': base_reduced,
+            'vat_reduced': vat_reduced,
+            'base_no_credit': base_no_credit,
+            'base_not_subject': base_not_subject,
+            'base_not_taxed': base_not_taxed,
+            'retention_number': data.get('retention_number') or '',
+            'retention_direction': retention_direction,
+        }
+
+    def _import_vat_book_line(self, line):
+        """Importa UNA línea creando 1 o 2 vat.book.line según retenciones."""
+        try:
+            with self.env.cr.savepoint():
+                data = line.data or {}
+                
+                # Skip si RIF vacío o ANULADO
+                partner_vat = data.get('partner_vat')
+                invoice_number = data.get('invoice_number', '')
+                if not partner_vat:
+                    line.write({'state': 'skipped', 'error_msg': _('RIF vacío')})
+                    return 'skipped'
+                if 'ANULADO' in str(invoice_number).upper():
+                    line.write({'state': 'skipped', 'error_msg': _('Factura anulada')})
+                    return 'skipped'
+                
+                # Resolver partner
+                partner = self.env['res.partner'].search([('vat', '=', partner_vat)], limit=1)
+                if not partner:
+                    if self.mode == 'strict':
+                        raise UserError(_("Partner con VAT '%s' no existe") % partner_vat)
+                    partner = self.env['res.partner'].create({
+                        'name': data.get('partner_name') or partner_vat,
+                        'vat': partner_vat,
+                    })
+                
+                book_type = 'purchase' if self.import_type == 'vat_book_purchase' else 'sale'
+                rate_type = data.get('_rate_type', 'general')
+                operation_code = self._get_vat_book_operation_code(rate_type, book_type)
+                period_month = self.period_month
+                company_id = self.company_id.id
+                
+                # Determinar líneas a crear según retenciones
+                lines_to_create = []
+                
+                if book_type == 'purchase':
+                    vendor_ret = data.get('vat_retained_vendor', 0) or 0
+                    third_ret = data.get('vat_retained_third', 0) or 0
+                    
+                    if vendor_ret > 0 and third_ret > 0:
+                        # 2 líneas separadas (constraint lo permite por distinto retention_direction)
+                        base_vals = self._build_vat_book_vals(data, book_type, partner.id, operation_code, 'to_vendor')
+                        base_vals['vat_retained'] = vendor_ret
+                        base_vals['retention_direction'] = 'to_vendor'
+                        lines_to_create.append(base_vals)
+                        
+                        third_vals = base_vals.copy()
+                        third_vals['vat_retained'] = third_ret
+                        third_vals['retention_direction'] = 'to_third'
+                        lines_to_create.append(third_vals)
+                    elif vendor_ret > 0:
+                        vals = self._build_vat_book_vals(data, book_type, partner.id, operation_code, 'to_vendor')
+                        vals['vat_retained'] = vendor_ret
+                        vals['retention_direction'] = 'to_vendor'
+                        lines_to_create.append(vals)
+                    elif third_ret > 0:
+                        vals = self._build_vat_book_vals(data, book_type, partner.id, operation_code, 'to_third')
+                        vals['vat_retained'] = third_ret
+                        vals['retention_direction'] = 'to_third'
+                        lines_to_create.append(vals)
+                    else:
+                        vals = self._build_vat_book_vals(data, book_type, partner.id, operation_code, 'to_vendor')
+                        lines_to_create.append(vals)
+                else:  # sale
+                    buyer_ret = data.get('vat_retained_buyer', 0) or 0
+                    vals = self._build_vat_book_vals(data, book_type, partner.id, operation_code, 'by_buyer')
+                    vals['vat_retained'] = buyer_ret
+                    vals['retention_direction'] = 'by_buyer'
+                    lines_to_create.append(vals)
+                
+                # Upsert cada línea (constraint único incluye 7 campos)
+                records_created = []
+                for vals in lines_to_create:
+                    vals['period_month'] = period_month
+                    vals['company_id'] = company_id
+                    
+                    unique_domain = [
+                        ('partner_id', '=', partner.id),
+                        ('invoice_number', '=', data.get('invoice_number')),
+                        ('control_number', '=', data.get('control_number') or ''),
+                        ('period_month', '=', period_month),
+                        ('company_id', '=', company_id),
+                        ('operation_code', '=', vals['operation_code']),
+                        ('retention_direction', '=', vals['retention_direction']),
+                    ]
+                    record, action = self._upsert_record('l10n.ve.vat.book.line', vals, unique_domain)
+                    records_created.append((record, action))
+                
+                # Actualizar línea import (usar el primer record)
+                if records_created:
+                    record, action = records_created[0]
+                    line.write({
+                        'state': 'imported' if action == 'created' else 'updated',
+                        'record_id': f"l10n.ve.vat.book.line,{record.id}",
+                        'record_name': record.display_name,
+                        'model_name': 'l10n.ve.vat.book.line',
+                    })
+                    return 'created' if action == 'created' else 'updated'
+                else:
+                    line.write({'state': 'skipped', 'error_msg': _('Sin datos para crear línea')})
+                    return 'skipped'
+                    
+        except Exception as e:
+            line.write({'state': 'error', 'error_msg': str(e)[:500]})
+            return 'error'
 
     def _normalize(self, text):
         """Normaliza texto para comparación (minúsculas, sin espacios, sin acentos, sin HTML)."""
@@ -1180,6 +1356,8 @@ class ImportWizard(models.TransientModel):
         for line in lines:
             if self.import_type == 'cartelera':
                 action = self._import_cartelera_line(line)
+            elif self.import_type in ('vat_book_purchase', 'vat_book_sale'):
+                action = self._import_vat_book_line(line)
             else:
                 action = self._import_line(line)
             if action == 'error' and self.mode == 'strict':
@@ -1501,3 +1679,4 @@ class ImportWizard(models.TransientModel):
             'view_mode': 'form',
             'target': 'new',
         }
+

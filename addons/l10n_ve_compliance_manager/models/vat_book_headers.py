@@ -19,6 +19,7 @@ VAT_BOOK_HEADER_MAP = {
     'nº factura': 'invoice_number',
     'numero factura / reporte z': 'invoice_number',
     'numero factura 0 reporte z': 'invoice_number',
+    'numero de factura 0 reporte z': 'invoice_number',
     'numero de control': 'control_number',
     'fecha': 'invoice_date',
     'fecha de la factura': 'invoice_date',
