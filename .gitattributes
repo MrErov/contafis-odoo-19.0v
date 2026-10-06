@@ -3,3 +3,6 @@
 *.xml text eol=lf
 *.csv text eol=lf
 *.md text eol=lf
+
+*.xlsx binary
+*.xls binary
