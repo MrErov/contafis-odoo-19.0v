@@ -631,14 +631,17 @@ class ImportWizard(models.TransientModel):
             if target in name.lower():
                 return name
         
-        # Fallback: hoja 0 para compras, hoja 1 para ventas
+# Fallback: hoja 0 para compras, hoja 1 para ventas
         if book_type == 'purchase':
             return sheet_names[0]
         else:
             return sheet_names[1] if len(sheet_names) > 1 else sheet_names[0]
 
     def _detect_header_row(self, ws):
-        """Detecta la fila de headers buscando 'R.I.F.' o 'Factura' en primeras 15 filas.
+        """Detecta la fila que contiene múltiples headers de tabla.
+        
+        Una fila con 3+ keywords distintos es header real.
+        Una fila con 1 keyword (ej: 'R.I.F.:' de la empresa) se descarta.
         
         Args:
             ws: openpyxl worksheet
@@ -646,14 +649,20 @@ class ImportWizard(models.TransientModel):
         Returns:
             int: índice 0-based de la fila header, o None si no encuentra
         """
+        keywords = [
+            'r.i.f', 'factura', 'base', 'alicuota', 'alícuota',
+            'nombre', 'fecha', 'control', 'iva', 'retención',
+            'retencion', 'número', 'numero', 'impuesto'
+        ]
         max_check_row = min(15, ws.max_row or 0)
         for row_idx in range(1, max_check_row + 1):  # 1-based
-            for cell in ws[row_idx]:
-                if cell.value:
-                    cell_str = str(cell.value).strip().lower()
-                    # 'R.I.F.' (con punto final) o 'R.I.F' (sin punto final) o 'Factura'
-                    if 'r.i.f.' in cell_str or 'r.i.f' in cell_str or 'factura' in cell_str:
-                        return row_idx - 1  # retornar 0-based
+            row_text = ' '.join(
+                str(cell.value).lower()
+                for cell in ws[row_idx] if cell.value
+            )
+            matches = sum(1 for kw in keywords if kw in row_text)
+            if matches >= 3:
+                return row_idx - 1  # retornar 0-based
         return None
 
     def _normalize_header(self, header_str):
