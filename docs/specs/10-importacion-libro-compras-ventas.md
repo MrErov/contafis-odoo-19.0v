@@ -85,3 +85,11 @@ complementario al canal Odoo-first de spec 09.
 - Detección de hoja: buscar nombre que contenga "COMPRAS" o
   "VENTAS" (case-insensitive). Fallback: hoja 1 = compras,
   hoja 2 = ventas.
+- **Multi-rate en preview**: El preview crea múltiples import.line
+  por factura cuando la factura tiene más de una tasa IVA (multi-rate).
+  Por ejemplo, una factura con base 16% + base_no_credit genera
+  2 import.line. Esto es intencional: en el import, cada línea crea
+  una vat.book.line separada según el operation_code.
+- **Filtrado de filas basura**: Se omiten filas donde falte RIF
+  (`partner_vat` vacío) O donde `invoice_number` sea vacío, '0',
+  'NONE' o 'BASE IMPONIBLE' (headers repetidos en medio de datos).

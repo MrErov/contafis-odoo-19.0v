@@ -790,8 +790,12 @@ class ImportWizard(models.TransientModel):
                 
                 row_data[field_name] = value
             
-            # Saltar filas vacías (sin RIF y sin número factura)
-            if not row_data.get('partner_vat') and not row_data.get('invoice_number'):
+            # Saltar filas vacías (sin RIF o sin número factura válido)
+            partner_vat = row_data.get('partner_vat')
+            inv_raw = str(row_data.get('invoice_number') or '').strip().upper()
+            if not partner_vat:
+                continue
+            if inv_raw in ('', '0', 'NONE', 'BASE IMPONIBLE'):
                 continue
             
             # Saltar filas anuladas
