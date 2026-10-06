@@ -120,6 +120,117 @@ class TestImportVatBook(TransactionCase):
         wb.save(output)
         return output.getvalue()
 
+    def _create_vat_book_both_excel(self, purchase_rows, sale_rows, header_row=3):
+        """
+        Genera un Excel con 2 hojas: COMPRAS y VENTAS.
+        
+        Args:
+            purchase_rows: Lista de dicts para COMPRAS
+            sale_rows: Lista de dicts para VENTAS
+            header_row: Fila 1-based donde están los headers
+            
+        Returns:
+            bytes: Contenido del archivo xlsx
+        """
+        wb = openpyxl.Workbook()
+        
+        # Hoja COMPRAS
+        ws_compras = wb.active
+        ws_compras.title = 'COMPRAS'
+        
+        if header_row > 1:
+            ws_compras.cell(row=1, column=1, value='LIBRO DE COMPRAS')
+            ws_compras.cell(row=2, column=1, value='Mes AGOSTO 2026')
+        
+        purchase_headers = [
+            'R.I.F.',
+            'Nombre o Razon Social',
+            'Numero de Factura',
+            'Numero de Control',
+            'Fecha',
+            'Base Alicuota General 16%',
+            'I.V.A. Alicuota General 16%',
+            'Base Alicuota Reducida',
+            'I.V.A. Alicuota Reducida',
+            'Compras NO SUJETAS',
+            'Compras sin Derecho a Credito (Nacional)',
+            'Base Importación 16%',
+            'I.V.A. de importación 16%',
+            'Nº Comprob. Retención 75%',
+            'IVA Retenido (al Vendedor)',
+            'IVA Retenido (a Terceros)',
+            'Anticipo IVA (Importación)',
+        ]
+        
+        for col_idx, header in enumerate(purchase_headers, 1):
+            ws_compras.cell(row=header_row, column=col_idx, value=header)
+        
+        for row_idx, row_data in enumerate(purchase_rows, header_row + 1):
+            ws_compras.cell(row=row_idx, column=1, value=row_data.get('partner_vat'))
+            ws_compras.cell(row=row_idx, column=2, value=row_data.get('partner_name'))
+            ws_compras.cell(row=row_idx, column=3, value=row_data.get('invoice_number'))
+            ws_compras.cell(row=row_idx, column=4, value=row_data.get('control_number'))
+            ws_compras.cell(row=row_idx, column=5, value=row_data.get('invoice_date'))
+            ws_compras.cell(row=row_idx, column=6, value=row_data.get('base_general'))
+            ws_compras.cell(row=row_idx, column=7, value=row_data.get('vat_general'))
+            ws_compras.cell(row=row_idx, column=8, value=row_data.get('base_reduced'))
+            ws_compras.cell(row=row_idx, column=9, value=row_data.get('vat_reduced'))
+            ws_compras.cell(row=row_idx, column=10, value=row_data.get('base_not_subject'))
+            ws_compras.cell(row=row_idx, column=11, value=row_data.get('base_no_credit'))
+            ws_compras.cell(row=row_idx, column=12, value=row_data.get('base_import_16'))
+            ws_compras.cell(row=row_idx, column=13, value=row_data.get('vat_import_16'))
+            ws_compras.cell(row=row_idx, column=14, value=row_data.get('retention_number'))
+            ws_compras.cell(row=row_idx, column=15, value=row_data.get('vat_retained_vendor'))
+            ws_compras.cell(row=row_idx, column=16, value=row_data.get('vat_retained_third'))
+            ws_compras.cell(row=row_idx, column=17, value=row_data.get('anticipo_import'))
+        
+        # Hoja VENTAS
+        ws_ventas = wb.create_sheet('VENTAS')
+        
+        if header_row > 1:
+            ws_ventas.cell(row=1, column=1, value='LIBRO DE VENTAS')
+            ws_ventas.cell(row=2, column=1, value='Mes AGOSTO 2026')
+        
+        sale_headers = [
+            'R.I.F',
+            'Nombre o Razon Social',
+            'Numero de Factura 0 reporte Z',
+            'Numero de Control',
+            'Fecha de la Factura',
+            'Ventas internas No sujetas',
+            'Ventas internas no gravadas (No Contrib)',
+            'Base Imponible (No Contrib)',
+            'Impuesto IVA (No Contrib)',
+            'Base Imponible (Contrib)',
+            'Impuesto IVA (Contrib)',
+            'Nº Comprob. Retención 75% IVA',
+            'Iva Retenido (por comprador)',
+        ]
+        
+        for col_idx, header in enumerate(sale_headers, 1):
+            ws_ventas.cell(row=header_row, column=col_idx, value=header)
+        
+        for row_idx, row_data in enumerate(sale_rows, header_row + 1):
+            ws_ventas.cell(row=row_idx, column=1, value=row_data.get('partner_vat'))
+            ws_ventas.cell(row=row_idx, column=2, value=row_data.get('partner_name'))
+            ws_ventas.cell(row=row_idx, column=3, value=row_data.get('invoice_number'))
+            ws_ventas.cell(row=row_idx, column=4, value=row_data.get('control_number'))
+            ws_ventas.cell(row=row_idx, column=5, value=row_data.get('invoice_date'))
+            ws_ventas.cell(row=row_idx, column=6, value=row_data.get('base_not_subject'))
+            ws_ventas.cell(row=row_idx, column=7, value=row_data.get('base_not_taxed'))
+            ws_ventas.cell(row=row_idx, column=8, value=row_data.get('base_general_non_contrib'))
+            ws_ventas.cell(row=row_idx, column=9, value=row_data.get('vat_general_non_contrib'))
+            ws_ventas.cell(row=row_idx, column=10, value=row_data.get('base_general_contrib'))
+            ws_ventas.cell(row=row_idx, column=11, value=row_data.get('vat_general_contrib'))
+            ws_ventas.cell(row=row_idx, column=12, value=row_data.get('retention_number'))
+            ws_ventas.cell(row=row_idx, column=13, value=row_data.get('vat_retained_buyer'))
+        
+        output = BytesIO()
+        wb.save(output)
+        return output.getvalue()
+        wb.save(output)
+        return output.getvalue()
+
     def _create_wizard(self, import_type='vat_book_purchase'):
         """Helper para crear wizard con datos por defecto."""
         return self.Wizard.create({
@@ -132,8 +243,10 @@ class TestImportVatBook(TransactionCase):
         types = dict(wizard._fields['import_type'].selection)
         self.assertIn('vat_book_purchase', types)
         self.assertIn('vat_book_sale', types)
+        self.assertIn('vat_book_both', types)
         self.assertEqual(types['vat_book_purchase'], 'Libro de Compras (IVA)')
         self.assertEqual(types['vat_book_sale'], 'Libro de Ventas (IVA)')
+        self.assertEqual(types['vat_book_both'], 'Libro de Compras y Ventas (IVA)')
 
     def test_wizard_has_vat_book_fields(self):
         """Verifica que el wizard tiene los campos period_month y sheet_name."""
@@ -423,3 +536,163 @@ class TestImportVatBook(TransactionCase):
         
         # Verificar fila de ejemplo (fila 2 existe, vacía)
         self.assertEqual(ws.max_row, 2)
+
+    def test_import_vat_book_both_loads_two_sheets(self):
+        """vat_book_both carga ambas hojas y marca _book_type en cada línea."""
+        wizard = self._create_wizard('vat_book_both')
+        
+        purchase_rows = [{
+            'partner_vat': 'J-31527189-4',
+            'partner_name': 'Proveedor Test',
+            'invoice_number': '001',
+            'control_number': '001',
+            'invoice_date': '15/08/2026',
+            'base_general': 1000,
+            'vat_general': 160,
+            'base_reduced': 0,
+            'vat_reduced': 0,
+            'base_not_subject': 0,
+            'base_no_credit': 500,
+            'base_import_16': 0,
+            'vat_import_16': 0,
+            'retention_number': '',
+            'vat_retained_vendor': 0,
+            'vat_retained_third': 0,
+            'anticipo_import': 0,
+        }]
+        sale_rows = [{
+            'partner_vat': 'V-12345678-5',
+            'partner_name': 'Cliente Test',
+            'invoice_number': '001-SALE',
+            'control_number': '001',
+            'invoice_date': '15/08/2026',
+            'base_not_subject': 0,
+            'base_not_taxed': 0,
+            'base_general_non_contrib': 0,
+            'vat_general_non_contrib': 0,
+            'base_general_contrib': 1000,
+            'vat_general_contrib': 160,
+            'retention_number': '',
+            'vat_retained_buyer': 50,
+        }]
+        
+        excel = self._create_vat_book_both_excel(purchase_rows, sale_rows)
+        wizard.write({'file': base64.b64encode(excel), 'filename': 'test.xlsx'})
+        wizard.action_load_file()
+        
+        # Verificar que se crearon líneas de ambas hojas
+        self.assertTrue(len(wizard.line_ids) >= 2)
+        
+        # Verificar _book_type
+        purchase_lines = wizard.line_ids.filtered(lambda l: l.data.get('_book_type') == 'purchase')
+        sale_lines = wizard.line_ids.filtered(lambda l: l.data.get('_book_type') == 'sale')
+        
+        self.assertTrue(len(purchase_lines) >= 1, 'Debe haber líneas purchase')
+        self.assertTrue(len(sale_lines) >= 1, 'Debe haber líneas sale')
+        
+        # Verificar multi-rate en purchase (base_general + base_no_credit = 2 líneas)
+        self.assertEqual(len(purchase_lines), 2)
+
+    def test_import_vat_book_both_imports_all(self):
+        """vat_book_both importa creando vat.book.line de ambos tipos."""
+        wizard = self._create_wizard('vat_book_both')
+        wizard.period_month = '2026-08'
+        
+        # 1 factura compra con base_general (1 línea)
+        # 1 factura compra con base_general + base_no_credit (2 líneas = multi-rate)
+        purchase_rows = [
+            {
+                'partner_vat': 'J-31527189-4',
+                'partner_name': 'Proveedor 1',
+                'invoice_number': '001',
+                'control_number': '001',
+                'invoice_date': '15/08/2026',
+                'base_general': 1000,
+                'vat_general': 160,
+                'base_reduced': 0,
+                'vat_reduced': 0,
+                'base_not_subject': 0,
+                'base_no_credit': 0,
+                'base_import_16': 0,
+                'vat_import_16': 0,
+                'retention_number': '',
+                'vat_retained_vendor': 0,
+                'vat_retained_third': 0,
+                'anticipo_import': 0,
+            },
+            {
+                'partner_vat': 'J-39204516-4',
+                'partner_name': 'Proveedor 2',
+                'invoice_number': '002',
+                'control_number': '002',
+                'invoice_date': '20/08/2026',
+                'base_general': 2000,
+                'vat_general': 320,
+                'base_reduced': 0,
+                'vat_reduced': 0,
+                'base_not_subject': 0,
+                'base_no_credit': 500,  # multi-rate: genera 2 líneas
+                'base_import_16': 0,
+                'vat_import_16': 0,
+                'retention_number': '',
+                'vat_retained_vendor': 0,
+                'vat_retained_third': 0,
+                'anticipo_import': 0,
+            },
+        ]
+        # 2 facturas venta (1 contrib, 1 non_contrib)
+        sale_rows = [
+            {
+                'partner_vat': 'V-12345678-5',
+                'partner_name': 'Cliente 1',
+                'invoice_number': '001-SALE',
+                'control_number': '001',
+                'invoice_date': '15/08/2026',
+                'base_not_subject': 0,
+                'base_not_taxed': 0,
+                'base_general_non_contrib': 0,
+                'vat_general_non_contrib': 0,
+                'base_general_contrib': 1000,
+                'vat_general_contrib': 160,
+                'retention_number': '',
+                'vat_retained_buyer': 50,
+            },
+            {
+                'partner_vat': 'V-26920712-3',
+                'partner_name': 'Cliente 2',
+                'invoice_number': '002-SALE',
+                'control_number': '002',
+                'invoice_date': '20/08/2026',
+                'base_not_subject': 0,
+                'base_not_taxed': 0,
+                'base_general_non_contrib': 1000,
+                'vat_general_non_contrib': 160,
+                'base_general_contrib': 0,
+                'vat_general_contrib': 0,
+                'retention_number': '',
+                'vat_retained_buyer': 0,
+            },
+        ]
+        
+        excel = self._create_vat_book_both_excel(purchase_rows, sale_rows)
+        wizard.write({'file': base64.b64encode(excel), 'filename': 'test.xlsx'})
+        wizard.action_load_file()
+        wizard.action_import()
+        
+        # Verificar vat.book.line creados
+        vbl = self.env['l10n.ve.vat.book.line'].search([
+            ('period_month', '=', '2026-08'),
+        ])
+        
+        purchase_vbl = vbl.filtered(lambda l: l.book_type == 'purchase')
+        sale_vbl = vbl.filtered(lambda l: l.book_type == 'sale')
+        
+        # purchase: 2 facturas, una con multi-rate = 3 líneas
+        self.assertEqual(len(purchase_vbl), 3, 'Debe crear 3 líneas purchase (2 facturas, 1 multi-rate)')
+        
+        # sale: 2 facturas = 2 líneas
+        self.assertEqual(len(sale_vbl), 2, 'Debe crear 2 líneas sale')
+        
+        # Verificar operation_codes
+        self.assertTrue(all(l.operation_code == '33' for l in purchase_vbl))
+        self.assertTrue(all(l.operation_code in ('42', '443') for l in sale_vbl))

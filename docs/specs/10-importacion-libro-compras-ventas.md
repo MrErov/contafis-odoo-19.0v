@@ -9,9 +9,10 @@ complementario al canal Odoo-first de spec 09.
 
 ## Alcance
 **Incluye:**
-- 2 nuevas ramas del wizard l10n.ve.import.wizard:
+- 3 nuevas ramas del wizard l10n.ve.import.wizard:
   * import_type = 'vat_book_purchase' (hoja COMPRAS)
   * import_type = 'vat_book_sale' (hoja VENTAS)
+  * import_type = 'vat_book_both' (ambas hojas en un solo archivo)
 - Detección dinámica de la fila de headers (patrón spec 07)
 - Parser de columnas específicas del Excel real del contador
   venezolano (formato libro IVA SENIAT)
@@ -26,6 +27,7 @@ complementario al canal Odoo-first de spec 09.
   * Log en l10n.ve.import.log con record_ids JSON
 - 2 plantillas descargables (Compras y Ventas) con headers exactos
   que el parser espera
+- 1 plantilla combinada (Compras y Ventas) con 2 hojas
 - Asignación automática de operation_code:
   * COMPRAS + base 16% > 0 → operation_code = '33'
   * VENTAS + base 16% > 0 → operation_code = '42'
@@ -70,6 +72,10 @@ complementario al canal Odoo-first de spec 09.
 - test_import_vat_book_operation_codes: verifica 33/42/333/443
 - test_import_vat_book_multi_month: importar agosto + septiembre,
   verificar que coexisten sin colisión
+- test_import_vat_book_both_loads_two_sheets: vat_book_both carga
+  ambas hojas y marca _book_type en cada línea
+- test_import_vat_book_both_imports_all: vat_book_both importa
+  creando vat.book.line de ambos tipos (3 purchase + 2 sale en test)
 
 ## Referencias
 - docs/specs/06-importacion-excel.md (infraestructura wizard)
@@ -85,6 +91,10 @@ complementario al canal Odoo-first de spec 09.
 - Detección de hoja: buscar nombre que contenga "COMPRAS" o
   "VENTAS" (case-insensitive). Fallback: hoja 1 = compras,
   hoja 2 = ventas.
+- **vat_book_both**: Procesa ambas hojas del Excel en una sola
+  importación. Cada import.line lleva data['_book_type'] ('purchase'
+  o 'sale') para que el import cree vat.book.line con el book_type
+  correcto. Si el Excel solo tiene una hoja, se procesa esa sin error.
 - **Multi-rate en preview**: El preview crea múltiples import.line
   por factura cuando la factura tiene más de una tasa IVA (multi-rate).
   Por ejemplo, una factura con base 16% + base_no_credit genera

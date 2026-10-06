@@ -21,6 +21,7 @@ class ImportWizard(models.TransientModel):
         ('cartelera', 'Cartelera Fiscal'),
         ('vat_book_purchase', 'Libro de Compras (IVA)'),
         ('vat_book_sale', 'Libro de Ventas (IVA)'),
+        ('vat_book_both', 'Libro de Compras y Ventas (IVA)'),
     ]
 
     import_type = fields.Selection(
@@ -211,6 +212,21 @@ class ImportWizard(models.TransientModel):
     def action_download_template(self):
         """Genera y descarga la plantilla Excel para el tipo seleccionado."""
         self.ensure_one()
+        
+        if self.import_type == 'vat_book_both':
+            xlsx_content = self._generate_vat_book_both_template()
+            filename = f'plantilla_{self.import_type}.xlsx'
+            self.write({
+                'template_file': base64.b64encode(xlsx_content),
+                'filename': filename,
+            })
+            return {
+                'type': 'ir.actions.act_url',
+                'url': f'/web/content/?model=l10n.ve.import.wizard&id={self.id}'
+                       f'&field=template_file&download=true&filename={filename}',
+                'target': 'self',
+            }
+        
         template_data = self._get_import_templates().get(self.import_type)
         if not template_data:
             return
@@ -226,6 +242,62 @@ class ImportWizard(models.TransientModel):
                    f'&field=template_file&download=true&filename={filename}',
             'target': 'self',
         }
+
+    def _generate_vat_book_both_template(self):
+        """Genera plantilla Excel con 2 hojas: COMPRAS y VENTAS."""
+        import openpyxl
+        from openpyxl.styles import Font, PatternFill, Alignment
+        from openpyxl.utils import get_column_letter
+        from io import BytesIO
+        
+        wb = openpyxl.Workbook()
+        
+        # Hoja COMPRAS
+        ws_compras = wb.active
+        ws_compras.title = 'COMPRAS'
+        
+        purchase_template = self._get_import_templates()['vat_book_purchase']
+        headers = [field[2] for field in purchase_template['fields']]
+        
+        # Estilo header
+        header_font = Font(bold=True, color='FFFFFF')
+        header_fill = PatternFill(
+            start_color='2C3E50', end_color='2C3E50', fill_type='solid'
+        )
+        header_align = Alignment(horizontal='center', wrap_text=True)
+        
+        for col_idx, header in enumerate(headers, 1):
+            cell = ws_compras.cell(row=1, column=col_idx, value=header)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = header_align
+            ws_compras.column_dimensions[get_column_letter(col_idx)].width = 25
+        
+        # Fila de ejemplo vacía
+        for col_idx in range(1, len(headers) + 1):
+            ws_compras.cell(row=2, column=col_idx, value='')
+        
+        # Hoja VENTAS
+        ws_ventas = wb.create_sheet('VENTAS')
+        
+        sale_template = self._get_import_templates()['vat_book_sale']
+        headers = [field[2] for field in sale_template['fields']]
+        
+        for col_idx, header in enumerate(headers, 1):
+            cell = ws_ventas.cell(row=1, column=col_idx, value=header)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = header_align
+            ws_ventas.column_dimensions[get_column_letter(col_idx)].width = 25
+        
+        # Fila de ejemplo vacía
+        for col_idx in range(1, len(headers) + 1):
+            ws_ventas.cell(row=2, column=col_idx, value='')
+        
+        # Guardar en bytes
+        output = BytesIO()
+        wb.save(output)
+        return output.getvalue()
 
     def _generate_template_xlsx(self, template_data):
         """Genera archivo xlsx con headers de la plantilla."""
@@ -540,7 +612,7 @@ class ImportWizard(models.TransientModel):
         if self.import_type == 'cartelera':
             return self._load_cartelera_file()
         
-        if self.import_type in ('vat_book_purchase', 'vat_book_sale'):
+        if self.import_type in ('vat_book_purchase', 'vat_book_sale', 'vat_book_both'):
             return self._load_vat_book_file()
 
         import base64
@@ -694,38 +766,47 @@ class ImportWizard(models.TransientModel):
         """Mapa header normalizado → field_name del template."""
         return VAT_BOOK_HEADER_MAP.get(norm_header)
 
-    def _parse_vat_book_excel(self):
+    def _parse_vat_book_excel(self, ws=None, book_type=None):
         """Parsea el Excel de Libro Compras/Ventas y crea líneas l10n.ve.import.line.
         
         NO importa, solo crea preview (state='draft').
         Multi-rate: si base_general > 0 Y base_reduced > 0 → 2 líneas separadas.
+        
+        Args:
+            ws: worksheet opcional. Si no se pasa, se carga desde self.file
+            book_type: 'purchase' o 'sale'. Si no se pasa, deriva de import_type
         """
         self.ensure_one()
-        if not self.file:
+        if not self.file and not ws:
             raise UserError(_('Debe subir un archivo Excel.'))
         
         import base64
         import openpyxl
         from io import BytesIO
         
-        file_data = base64.b64decode(self.file)
-        wb = openpyxl.load_workbook(BytesIO(file_data), read_only=True, data_only=True)
-        
-        # Determinar book_type desde import_type
-        book_type = 'purchase' if self.import_type == 'vat_book_purchase' else 'sale'
-        
-        # Detectar hoja
-        sheet_name = self._detect_vat_book_sheet(wb, book_type)
-        self.sheet_name = sheet_name
-        ws = wb[sheet_name]
+        if ws is None:
+            file_data = base64.b64decode(self.file)
+            wb = openpyxl.load_workbook(BytesIO(file_data), read_only=True, data_only=True)
+            
+            # Determinar book_type desde import_type
+            if book_type is None:
+                book_type = 'purchase' if self.import_type == 'vat_book_purchase' else 'sale'
+            
+            # Detectar hoja
+            sheet_name = self._detect_vat_book_sheet(wb, book_type)
+            self.sheet_name = sheet_name
+            ws = wb[sheet_name]
+        else:
+            if book_type is None:
+                raise UserError(_('book_type es requerido cuando se pasa ws'))
         
         # Detectar fila header
         header_row_idx = self._detect_header_row(ws)
         if header_row_idx is None:
             raise UserError(_(
                 "No se encontró la fila de headers (buscando 'R.I.F.' o 'Factura' "
-                "en las primeras 15 filas) en la hoja '%s'."
-            ) % sheet_name)
+                "en las primeras 15 filas)."
+            ))
         
         # Parsear headers
         header_map = self._parse_vat_book_headers(ws, header_row_idx)
@@ -738,30 +819,32 @@ class ImportWizard(models.TransientModel):
                 field_map[field_name] = col_idx
         
         # Detectar period_month en filas anteriores al header (opcional)
-        period_month = None
-        for row_idx in range(1, header_row_idx + 1):
-            for cell in ws[row_idx]:
-                if cell.value and isinstance(cell.value, str):
-                    val = cell.value.strip()
-                    # Buscar patrón "Mes AGOSTO 2026" o "Período: Agosto 2026"
-                    import re
-                    match = re.search(r'(?:mes|per[ií]odo)[\s:]*(\w+)\s+(\d{4})', val, re.IGNORECASE)
-                    if match:
-                        month_name, year = match.groups()
-                        month_map = {
-                            'enero': '01', 'febrero': '02', 'marzo': '03', 'abril': '04',
-                            'mayo': '05', 'junio': '06', 'julio': '07', 'agosto': '08',
-                            'septiembre': '09', 'octubre': '10', 'noviembre': '11', 'diciembre': '12',
-                        }
-                        month = month_map.get(month_name.lower())
-                        if month:
-                            period_month = f'{year}-{month}'
-                            break
+        # Solo detectar si no tenemos period_month ya
+        if not self.period_month:
+            period_month = None
+            for row_idx in range(1, header_row_idx + 1):
+                for cell in ws[row_idx]:
+                    if cell.value and isinstance(cell.value, str):
+                        val = cell.value.strip()
+                        # Buscar patrón "Mes AGOSTO 2026" o "Período: Agosto 2026"
+                        import re
+                        match = re.search(r'(?:mes|per[ií]odo)[\s:]*(\w+)\s+(\d{4})', val, re.IGNORECASE)
+                        if match:
+                            month_name, year = match.groups()
+                            month_map = {
+                                'enero': '01', 'febrero': '02', 'marzo': '03', 'abril': '04',
+                                'mayo': '05', 'junio': '06', 'julio': '07', 'agosto': '08',
+                                'septiembre': '09', 'octubre': '10', 'noviembre': '11', 'diciembre': '12',
+                            }
+                            month = month_map.get(month_name.lower())
+                            if month:
+                                period_month = f'{year}-{month}'
+                                break
+                if period_month:
+                    break
+            
             if period_month:
-                break
-        
-        if period_month:
-            self.period_month = period_month
+                self.period_month = period_month
         
         # Leer filas de datos
         data_start_row = header_row_idx + 2  # 1-based (header_row_idx es 0-based)
@@ -824,24 +907,28 @@ class ImportWizard(models.TransientModel):
                 if has_general or has_import:
                     line_data = row_data.copy()
                     line_data['_rate_type'] = 'general'
+                    line_data['_book_type'] = 'purchase'
                     lines_to_create.append(line_data)
                 
                 # Línea para alícuota reducida (8%)
                 if has_reduced:
                     line_data = row_data.copy()
                     line_data['_rate_type'] = 'reduced'
+                    line_data['_book_type'] = 'purchase'
                     lines_to_create.append(line_data)
                 
                 # Línea para no sujetas
                 if has_not_subject:
                     line_data = row_data.copy()
                     line_data['_rate_type'] = 'not_subject'
+                    line_data['_book_type'] = 'purchase'
                     lines_to_create.append(line_data)
                 
                 # Línea para sin crédito
                 if has_no_credit:
                     line_data = row_data.copy()
                     line_data['_rate_type'] = 'no_credit'
+                    line_data['_book_type'] = 'purchase'
                     lines_to_create.append(line_data)
                     
             else:  # sale
@@ -849,29 +936,35 @@ class ImportWizard(models.TransientModel):
                 if has_contrib:
                     line_data = row_data.copy()
                     line_data['_rate_type'] = 'general'
+                    line_data['_book_type'] = 'sale'
                     lines_to_create.append(line_data)
                 
                 # Línea para no contrib
                 if has_non_contrib:
                     line_data = row_data.copy()
                     line_data['_rate_type'] = 'non_contrib'
+                    line_data['_book_type'] = 'sale'
                     lines_to_create.append(line_data)
                 
                 # Línea para no sujetas
                 if has_not_subject:
                     line_data = row_data.copy()
                     line_data['_rate_type'] = 'not_subject'
+                    line_data['_book_type'] = 'sale'
                     lines_to_create.append(line_data)
                 
                 # Línea para no gravadas
                 if has_not_taxed:
                     line_data = row_data.copy()
                     line_data['_rate_type'] = 'not_taxed'
+                    line_data['_book_type'] = 'sale'
                     lines_to_create.append(line_data)
             
             # Si no hay ninguna base > 0, crear una línea genérica
             if not lines_to_create:
-                lines_to_create = [row_data]
+                line_data = row_data.copy()
+                line_data['_book_type'] = book_type
+                lines_to_create = [line_data]
             
             # Crear líneas
             for line_data in lines_to_create:
@@ -885,16 +978,72 @@ class ImportWizard(models.TransientModel):
         
         if row_count == 0:
             raise UserError(_(
-                "No se encontraron datos válidos en la hoja '%s'. "
+                "No se encontraron datos válidos. "
                 "Verifique que las columnas R.I.F. y Número Factura tengan datos."
-            ) % sheet_name)
+            ))
         
         return row_count
+
+    def _parse_vat_book_sheet(self, ws, book_type):
+        """Parsea una hoja individual (COMPRAS o VENTAS) y crea líneas.
+        
+        Args:
+            ws: worksheet openpyxl
+            book_type: 'purchase' o 'sale'
+        """
+        return self._parse_vat_book_excel(ws=ws, book_type=book_type)
 
     def _load_vat_book_file(self):
         """Carga archivo Libro Compras/Ventas: parsea directo y va a preview."""
         self.ensure_one()
-        row_count = self._parse_vat_book_excel()
+        
+        if self.import_type == 'vat_book_both':
+            # Procesar ambas hojas en un solo wizard
+            import base64
+            import openpyxl
+            from io import BytesIO
+            
+            file_data = base64.b64decode(self.file)
+            wb = openpyxl.load_workbook(BytesIO(file_data), read_only=True, data_only=True)
+            
+            sheet_names = wb.sheetnames
+            total_count = 0
+            
+            # Detectar hoja COMPRAS
+            compra_ws = None
+            for name in sheet_names:
+                if 'compras' in name.lower():
+                    compra_ws = wb[name]
+                    break
+            
+            # Detectar hoja VENTAS
+            venta_ws = None
+            for name in sheet_names:
+                if 'ventas' in name.lower():
+                    venta_ws = wb[name]
+                    break
+            
+            if not compra_ws and not venta_ws:
+                raise UserError(_(
+                    "El archivo no contiene hojas 'COMPRAS' ni 'VENTAS'. "
+                    "Verifique el nombre de las hojas."
+                ))
+            
+            if compra_ws:
+                total_count += self._parse_vat_book_sheet(compra_ws, 'purchase')
+            
+            if venta_ws:
+                total_count += self._parse_vat_book_sheet(venta_ws, 'sale')
+            
+            if total_count == 0:
+                raise UserError(_(
+                    "No se encontraron datos válidos en ninguna hoja. "
+                    "Verifique que las columnas R.I.F. y Número Factura tengan datos."
+                ))
+        else:
+            # Comportamiento actual: solo una hoja
+            self._parse_vat_book_excel()
+        
         self.state = 'preview'
         return {
             'type': 'ir.actions.act_window',
@@ -999,7 +1148,20 @@ class ImportWizard(models.TransientModel):
                         'vat': partner_vat,
                     })
                 
-                book_type = 'purchase' if self.import_type == 'vat_book_purchase' else 'sale'
+                # Determinar book_type desde _book_type en data (para vat_book_both)
+                # Con fallback seguro para vat_book_purchase / vat_book_sale
+                book_type = data.get('_book_type')
+                if book_type not in ('purchase', 'sale'):
+                    if self.import_type == 'vat_book_purchase':
+                        book_type = 'purchase'
+                    elif self.import_type == 'vat_book_sale':
+                        book_type = 'sale'
+                    else:
+                        raise UserError(_(
+                            "Bug del parser: línea sin _book_type en import_type "
+                            "'vat_book_both'. Fila: %s"
+                        ) % line.row_index)
+                
                 rate_type = data.get('_rate_type', 'general')
                 operation_code = self._get_vat_book_operation_code(rate_type, book_type)
                 period_month = self.period_month
@@ -1369,7 +1531,7 @@ class ImportWizard(models.TransientModel):
         for line in lines:
             if self.import_type == 'cartelera':
                 action = self._import_cartelera_line(line)
-            elif self.import_type in ('vat_book_purchase', 'vat_book_sale'):
+            elif self.import_type in ('vat_book_purchase', 'vat_book_sale', 'vat_book_both'):
                 action = self._import_vat_book_line(line)
             else:
                 action = self._import_line(line)
