@@ -364,3 +364,62 @@ class TestImportVatBook(TransactionCase):
         
         # Ambas con mismo operation_code pero distinta direction → no colisionan
         self.assertNotEqual(line_vendor.id, line_third.id)
+
+    def test_download_purchase_template(self):
+        """Verifica que Descargar Plantilla funciona para vat_book_purchase."""
+        wizard = self._create_wizard('vat_book_purchase')
+        result = wizard.action_download_template()
+        
+        self.assertEqual(result['type'], 'ir.actions.act_url')
+        self.assertIn('plantilla_vat_book_purchase.xlsx', result['url'])
+        self.assertTrue(wizard.template_file)
+        
+        import base64
+        xlsx = base64.b64decode(wizard.template_file)
+        wb = openpyxl.load_workbook(BytesIO(xlsx))
+        ws = wb.active
+        
+        # Verificar headers en la primera fila (plantilla)
+        headers = [ws.cell(row=1, column=c).value for c in range(1, ws.max_column + 1)]
+        expected = [
+            'R.I.F.', 'Nombre o Razon Social', 'Tipo Doc', 'Numero de Factura',
+            'Numero de Control', 'Fecha', 'Base Alicuota General 16%',
+            'I.V.A. Alicuota General 16%', 'Base Alicuota Reducida',
+            'I.V.A. Alicuota Reducida', 'Compras NO SUJETAS',
+            'Compras sin Derecho a Credito (Nacional)', 'Base Importación 16%',
+            'I.V.A. de importación 16%', 'Nº Comprob. Retención 75%',
+            'IVA Retenido (al Vendedor)', 'IVA Retenido (a Terceros)',
+            'Anticipo IVA (Importación)',
+        ]
+        self.assertEqual(headers, expected)
+        
+        # Verificar fila de ejemplo (fila 2 existe, vacía)
+        self.assertEqual(ws.max_row, 2)
+
+    def test_download_sale_template(self):
+        """Verifica que Descargar Plantilla funciona para vat_book_sale."""
+        wizard = self._create_wizard('vat_book_sale')
+        result = wizard.action_download_template()
+        
+        self.assertEqual(result['type'], 'ir.actions.act_url')
+        self.assertIn('plantilla_vat_book_sale.xlsx', result['url'])
+        self.assertTrue(wizard.template_file)
+        
+        import base64
+        xlsx = base64.b64decode(wizard.template_file)
+        wb = openpyxl.load_workbook(BytesIO(xlsx))
+        ws = wb.active
+        
+        headers = [ws.cell(row=1, column=c).value for c in range(1, ws.max_column + 1)]
+        expected = [
+            'R.I.F.', 'Nombre o Razon Social', 'Tipo Doc', 'Numero de Factura',
+            'Numero de Control', 'Fecha', 'Ventas internas No sujetas',
+            'Ventas internas no gravadas (No Contrib)', 'Base Imponible (No Contrib)',
+            'Impuesto IVA (No Contrib)', 'Base Imponible (Contrib)',
+            'Impuesto IVA (Contrib)', 'Nº Comprob. Retención 75% IVA',
+            'Iva Retenido (por comprador)',
+        ]
+        self.assertEqual(headers, expected)
+        
+        # Verificar fila de ejemplo (fila 2 existe, vacía)
+        self.assertEqual(ws.max_row, 2)
