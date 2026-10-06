@@ -8,6 +8,12 @@ class TestVatBookGenerate(TransactionCase):
 
     def setUp(self):
         super().setUp()
+        # Aislar BD: limpiar datos de corridas previas
+        self.env['l10n.ve.vat.book.line'].search([]).unlink()
+        self.env['l10n.ve.import.line'].search([]).unlink()
+        self.env['l10n.ve.import.wizard'].search([]).unlink()
+        self.env['l10n.ve.vat.return'].search([]).unlink()
+
         self.company = self.env.company
         self.country = self.env['res.country'].search([('code', '=', 'VE')], limit=1)
         if not self.country:
@@ -202,6 +208,7 @@ class TestVatBookGenerate(TransactionCase):
 
         lines = self.env['l10n.ve.vat.book.line'].search([
             ('period_month', '=', '2026-08'),
+            ('company_id', '=', self.company.id),
         ])
         codes = lines.mapped('operation_code')
         self.assertIn('33', codes)   # Compra 16%
@@ -235,6 +242,7 @@ class TestVatBookGenerate(TransactionCase):
         line = self.env['l10n.ve.vat.book.line'].search([
             ('invoice_number', '=', inv.name),
             ('period_month', '=', '2026-08'),
+            ('company_id', '=', self.company.id),
         ])
         self.assertTrue(line.retention_number)
         self.assertEqual(line.vat_retained, 120.0)
@@ -264,6 +272,7 @@ class TestVatBookGenerate(TransactionCase):
         lines = self.env['l10n.ve.vat.book.line'].search([
             ('invoice_number', '=', inv.name),
             ('period_month', '=', '2026-08'),
+            ('company_id', '=', self.company.id),
         ])
         # Debe crear 2 líneas: una para 16% y otra para 8%
         self.assertEqual(len(lines), 2)

@@ -10,6 +10,12 @@ class TestVatReturn(TransactionCase):
 
     def setUp(self):
         super().setUp()
+        # Aislar BD: limpiar datos de corridas previas
+        self.env['l10n.ve.vat.book.line'].search([]).unlink()
+        self.env['l10n.ve.vat.return'].search([]).unlink()
+        self.env['l10n.ve.import.line'].search([]).unlink()
+        self.env['l10n.ve.import.wizard'].search([]).unlink()
+
         self.company = self.env.company
         self.country = self.env['res.country'].search([('code', '=', 'VE')], limit=1)
         if not self.country:

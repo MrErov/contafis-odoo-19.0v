@@ -11,6 +11,12 @@ class TestImportVatBook(TransactionCase):
 
     def setUp(self):
         super().setUp()
+        # Aislar BD: limpiar datos de corridas previas
+        self.env['l10n.ve.vat.book.line'].search([]).unlink()
+        self.env['l10n.ve.import.line'].search([]).unlink()
+        self.env['l10n.ve.import.wizard'].search([]).unlink()
+        self.env['l10n.ve.vat.return'].search([]).unlink()
+
         self.Wizard = self.env['l10n.ve.import.wizard']
 
     def _create_vat_book_excel(self, rows_data, book_type='purchase', sheet_name=None, header_row=3):
@@ -694,5 +700,6 @@ class TestImportVatBook(TransactionCase):
         self.assertEqual(len(sale_vbl), 2, 'Debe crear 2 líneas sale')
         
         # Verificar operation_codes
-        self.assertTrue(all(l.operation_code == '33' for l in purchase_vbl))
+        # purchase: general=33, no_credit=30
+        self.assertTrue(all(l.operation_code in ('33', '30') for l in purchase_vbl))
         self.assertTrue(all(l.operation_code in ('42', '443') for l in sale_vbl))
