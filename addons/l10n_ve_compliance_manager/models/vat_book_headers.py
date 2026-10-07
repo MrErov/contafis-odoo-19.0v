@@ -31,6 +31,7 @@ VAT_BOOK_HEADER_MAP = {
     'compras sin derecho a credito (nacional)': 'base_no_credit',
     'base importacion 16%': 'base_import_16',
     'iva de importacion 16%': 'vat_import_16',
+    'iva importacion 16%': 'vat_import_16',
     'nº comprob retencion 75%': 'retention_number',
     'iva retenido (al vendedor)': 'vat_retained_vendor',
     'iva retenido (a terceros)': 'vat_retained_third',

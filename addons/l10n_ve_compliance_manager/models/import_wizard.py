@@ -786,7 +786,7 @@ class ImportWizard(models.TransientModel):
         
         if ws is None:
             file_data = base64.b64decode(self.file)
-            wb = openpyxl.load_workbook(BytesIO(file_data), read_only=True, data_only=True)
+            wb = openpyxl.load_workbook(BytesIO(file_data), data_only=True)
             
             # Determinar book_type desde import_type
             if book_type is None:

@@ -1,6 +1,7 @@
 from io import BytesIO
 import base64
 import openpyxl
+from pathlib import Path
 
 from odoo.tests import TransactionCase, tagged
 
@@ -703,3 +704,249 @@ class TestImportVatBook(TransactionCase):
         # purchase: general=33, no_credit=30
         self.assertTrue(all(l.operation_code in ('33', '30') for l in purchase_vbl))
         self.assertTrue(all(l.operation_code in ('42', '443') for l in sale_vbl))
+
+    def _compute_expected_totals_from_fixture(self, book_type):
+        """Suma los totales del Excel real para validar contra el import.
+        
+        NOTA: El import combina base_import_16 en base_general y vat_import_16 en vat_general
+        (ver _build_vat_book_vals en import_wizard.py). Este helper replica esa lógica
+        para que la comparación sea apple-to-apple.
+        """
+        import openpyxl
+        from pathlib import Path
+
+        fixture_path = Path(__file__).parent / 'fixtures' / 'Libro_COMPRAS_VENTAS_Ficticio.xlsx'
+        wb = openpyxl.load_workbook(fixture_path, data_only=True)
+
+        if book_type == 'purchase':
+            ws = wb['COMPRAS']
+            data_start, data_end = 8, 17
+            
+            base_general = 0.0
+            vat_general = 0.0
+            base_no_credit = 0.0
+            base_import_16 = 0.0
+            vat_import_16 = 0.0
+            vat_retained_vendor = 0.0
+            
+            for r in range(data_start, data_end + 1):
+                v = ws.cell(row=r, column=23).value
+                if isinstance(v, (int, float)):
+                    base_general += v
+                v = ws.cell(row=r, column=24).value
+                if isinstance(v, (int, float)):
+                    vat_general += v
+                v = ws.cell(row=r, column=21).value
+                if isinstance(v, (int, float)):
+                    base_no_credit += v
+                v = ws.cell(row=r, column=19).value
+                if isinstance(v, (int, float)):
+                    base_import_16 += v
+                v = ws.cell(row=r, column=20).value
+                if isinstance(v, (int, float)):
+                    vat_import_16 += v
+                v = ws.cell(row=r, column=29).value
+                if isinstance(v, (int, float)):
+                    vat_retained_vendor += v
+            
+            # Replicar lógica del import: combinar import en general
+            return {
+                'base_general': base_general + base_import_16,
+                'vat_general': vat_general + vat_import_16,
+                'base_no_credit': base_no_credit,
+                'base_import_16': base_import_16,
+                'vat_import_16': vat_import_16,
+                'vat_retained_vendor': vat_retained_vendor,
+            }
+        else:
+            ws = wb['VENTAS']
+            data_start, data_end = 12, 21
+            cols = {
+                'base_general_contrib': 22,
+                'vat_general_contrib': 24,
+                'base_general_non_contrib': 18,
+                'vat_general_non_contrib': 20,
+                'vat_retained_buyer': 27,
+            }
+
+            totals = {k: 0.0 for k in cols}
+            for r in range(data_start, data_end + 1):
+                for key, col in cols.items():
+                    v = ws.cell(row=r, column=col).value
+                    if isinstance(v, (int, float)):
+                        totals[key] += v
+            return totals
+
+    def test_import_real_fixture_purchase_12_lines(self):
+        """Fixture real COMPRAS: 10 facturas + 2 multi-rate = 12 import.line."""
+        wizard = self._create_wizard('vat_book_purchase')
+        
+        fixture_path = Path(__file__).parent / 'fixtures' / 'Libro_COMPRAS_VENTAS_Ficticio.xlsx'
+        wizard.write({
+            'file': base64.b64encode(fixture_path.read_bytes()),
+            'filename': fixture_path.name,
+        })
+        wizard.action_load_file()
+        
+        # 10 facturas: 8 normales (1 línea c/u) + 2 con multi-rate (2 líneas c/u) = 12
+        self.assertEqual(len(wizard.line_ids), 12, 
+            f'Esperado 12 import.line, got {len(wizard.line_ids)}')
+        
+        # Todas deben ser purchase
+        for line in wizard.line_ids:
+            bt = line.data.get('_book_type')
+            self.assertIn(bt, ('purchase', ''), f'Línea con _book_type inesperado: {bt}')
+
+    def test_import_real_fixture_sale_9_lines(self):
+        """Fixture real VENTAS: 10 facturas - 1 anulada = 9 import.line."""
+        wizard = self._create_wizard('vat_book_sale')
+        
+        fixture_path = Path(__file__).parent / 'fixtures' / 'Libro_COMPRAS_VENTAS_Ficticio.xlsx'
+        wizard.write({
+            'file': base64.b64encode(fixture_path.read_bytes()),
+            'filename': fixture_path.name,
+        })
+        wizard.action_load_file()
+        
+        # 10 facturas - 1 anulada = 9
+        self.assertEqual(len(wizard.line_ids), 9,
+            f'Esperado 9 import.line, got {len(wizard.line_ids)}')
+
+    def test_import_real_fixture_both_creates_21_lines(self):
+        """Fixture real BOTH: 12 purchase + 9 sale = 21 import.line → 21 vat.book.line."""
+        wizard = self._create_wizard('vat_book_both')
+        wizard.period_month = '2026-08'
+        
+        fixture_path = Path(__file__).parent / 'fixtures' / 'Libro_COMPRAS_VENTAS_Ficticio.xlsx'
+        wizard.write({
+            'file': base64.b64encode(fixture_path.read_bytes()),
+            'filename': fixture_path.name,
+        })
+        wizard.action_load_file()
+        
+        # 12 + 9 = 21 import.lines
+        self.assertEqual(len(wizard.line_ids), 21,
+            f'Esperado 21 import.line, got {len(wizard.line_ids)}')
+        
+        purchase_lines = wizard.line_ids.filtered(lambda l: l.data.get('_book_type') == 'purchase')
+        sale_lines = wizard.line_ids.filtered(lambda l: l.data.get('_book_type') == 'sale')
+        self.assertEqual(len(purchase_lines), 12)
+        self.assertEqual(len(sale_lines), 9)
+        
+        # Importar y verificar vat.book.line
+        wizard.action_import()
+        
+        vbl = self.env['l10n.ve.vat.book.line'].search([
+            ('period_month', '=', '2026-08'),
+        ])
+        
+        purchase_vbl = vbl.filtered(lambda l: l.book_type == 'purchase')
+        sale_vbl = vbl.filtered(lambda l: l.book_type == 'sale')
+        
+        # 12 purchase + 9 sale = 21
+        self.assertEqual(len(purchase_vbl), 12)
+        self.assertEqual(len(sale_vbl), 9)
+        self.assertEqual(len(vbl), 21)
+
+    def test_import_real_fixture_purchase_idempotent(self):
+        """Re-importar el mismo fixture no duplica ni cambia totales."""
+        wizard = self._create_wizard('vat_book_purchase')
+        wizard.period_month = '2026-08'
+        fixture_path = Path(__file__).parent / 'fixtures' / 'Libro_COMPRAS_VENTAS_Ficticio.xlsx'
+        wizard.write({
+            'file': base64.b64encode(fixture_path.read_bytes()),
+            'filename': fixture_path.name,
+        })
+        wizard.action_load_file()
+        wizard.action_import()
+        
+        vbl = self.env['l10n.ve.vat.book.line'].search([
+            ('period_month', '=', '2026-08'),
+            ('book_type', '=', 'purchase'),
+        ])
+        
+        total_base = sum(vbl.mapped('base_general'))
+        total_vat = sum(vbl.mapped('vat_general'))
+        
+        # Verificar que re-importar produce los mismos totales (upsert idempotente)
+        wizard2 = self._create_wizard('vat_book_purchase')
+        wizard2.period_month = '2026-08'
+        wizard2.write({
+            'file': base64.b64encode(fixture_path.read_bytes()),
+            'filename': fixture_path.name,
+        })
+        wizard2.action_load_file()
+        wizard2.action_import()
+        
+        vbl2 = self.env['l10n.ve.vat.book.line'].search([
+            ('period_month', '=', '2026-08'),
+            ('book_type', '=', 'purchase'),
+        ])
+        
+        total_base2 = sum(vbl2.mapped('base_general'))
+        total_vat2 = sum(vbl2.mapped('vat_general'))
+        
+        self.assertEqual(total_base, total_base2, 'Re-importar debe dar mismo base_general')
+        self.assertEqual(total_vat, total_vat2, 'Re-importar debe dar mismo vat_general')
+        
+        # Verificar que los totales son positivos y razonables
+        self.assertGreater(total_base, 0)
+
+    def test_import_real_fixture_purchase_totals_matches_excel(self):
+        """Verifica que los totales importados coinciden con valores
+        concretos del fixture real.
+
+        Los valores hardcodeados documentan el total del fixture
+        estático. Si el fixture cambia, este test falla hasta que
+        se actualicen los números.
+        """
+        wizard = self._create_wizard('vat_book_purchase')
+        wizard.period_month = '2026-08'
+        fixture_path = Path(__file__).parent / 'fixtures' / 'Libro_COMPRAS_VENTAS_Ficticio.xlsx'
+        wizard.write({
+            'file': base64.b64encode(fixture_path.read_bytes()),
+            'filename': fixture_path.name,
+        })
+        wizard.action_load_file()
+        wizard.action_import()
+
+        vbl = self.env['l10n.ve.vat.book.line'].search([
+            ('period_month', '=', '2026-08'),
+            ('book_type', '=', 'purchase'),
+        ])
+
+        total_base = sum(vbl.mapped('base_general'))
+        total_vat = sum(vbl.mapped('vat_general'))
+
+        # Valores del fixture COMPRAS regenerado
+        # (base_general + base_import_16 combinados según _build_vat_book_vals)
+        # base_general = sum(col23 filas 8-17) + col19 fila 13
+        # vat_general  = sum(col24 filas 8-17) + col20 fila 13
+        EXPECTED_BASE_GENERAL = 2477517.43  # actualizar si el fixture cambia
+        EXPECTED_VAT_GENERAL = 396402.80     # actualizar si el fixture cambia
+
+        self.assertAlmostEqual(total_base, EXPECTED_BASE_GENERAL, places=2,
+            msg=f"base_general: import={total_base} expected={EXPECTED_BASE_GENERAL}")
+        self.assertAlmostEqual(total_vat, EXPECTED_VAT_GENERAL, places=2,
+            msg=f"vat_general: import={total_vat} expected={EXPECTED_VAT_GENERAL}")
+
+    def test_import_real_fixture_sale_anulada_skipped(self):
+        """Factura anulada VENTAS (fila 17, invoice 000139) NO está en vat.book.line."""
+        wizard = self._create_wizard('vat_book_sale')
+        wizard.period_month = '2026-08'
+        
+        fixture_path = Path(__file__).parent / 'fixtures' / 'Libro_COMPRAS_VENTAS_Ficticio.xlsx'
+        wizard.write({
+            'file': base64.b64encode(fixture_path.read_bytes()),
+            'filename': fixture_path.name,
+        })
+        wizard.action_load_file()
+        wizard.action_import()
+        
+        # Verificar que NO existe línea con invoice_number 000139
+        anulada = self.env['l10n.ve.vat.book.line'].search([
+            ('invoice_number', '=', '000139'),
+            ('period_month', '=', '2026-08'),
+            ('book_type', '=', 'sale'),
+        ])
+        self.assertEqual(len(anulada), 0, 'Factura anulada 000139 no debe importarse')
