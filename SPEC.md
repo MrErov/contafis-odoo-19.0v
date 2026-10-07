@@ -96,12 +96,24 @@ para contadores en Venezuela. Multi-cliente (el contador gestiona varias empresa
 - ✅ Reporte PDF Forma 99030
 - ✅ 78 tests pasando (63 + 15 nuevos)
 
+### Fase G: Importación de Libro de Compras/Ventas desde Excel (COMPLETADA)
+- ✅ Wizard con 3 import_types: vat_book_purchase, vat_book_sale,
+  vat_book_both
+- ✅ Parser dinámico con detección de headers por keywords
+- ✅ Multi-rate por factura (una línea por tasa IVA distinta)
+- ✅ Retención dividida (to_vendor / to_third / by_buyer)
+- ✅ Upsert idempotente con constraint único de 7 campos
+- ✅ 3 plantillas descargables (Compras, Ventas, Both con 2 hojas)
+- ✅ 6 tests de integración con Excel real
+- ✅ 96 tests pasando (90 + 6 nuevos)
+
 ### Trabajo Futuro
 - ⬜ Spec 11: Conciliación ISLR
-- ⬜ Fase G: Importación de Libro de Compras/Ventas desde Excel (spec 10)
-  (aprovecha wizard existente, ramas vat_book_purchase y vat_book_sale)
 - ⬜ Migrar `_sql_constraints` a `models.Constraint` (Odoo 19 lo
   marcó deprecated, aparecen 2 warnings en logs)
+- ⬜ Fase H: E2E con Playwright (subida de Excel vía UI)
+- ⬜ Tests de integración con fixtures de cartelera y
+  conciliación fiscal (ya en repo, sin tests)
 - ⬜ Importación de asientos contables (account.move)
 - ⬜ Integración MCP Odoo (mart337i/odoo-dev-mcp)
 
@@ -109,7 +121,7 @@ para contadores en Venezuela. Multi-cliente (el contador gestiona varias empresa
 
 - ✅ README.md, CHANGELOG.md, LICENSE (LGPL-3), CONTRIBUTING.md
 - ✅ Metodología SDD (AGENTS.md, docs/specs/, opencode.json)
-- ✅ 78 tests pasando
+- ✅ 96 tests pasando
 - ✅ Comandos OpenCode en `.opencode/commands/`
 - ⬜ Capturas de pantalla en docs/screenshots/
 - ⬜ Topics GitHub

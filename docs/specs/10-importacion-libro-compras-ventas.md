@@ -103,3 +103,30 @@ complementario al canal Odoo-first de spec 09.
 - **Filtrado de filas basura**: Se omiten filas donde falte RIF
   (`partner_vat` vacío) O donde `invoice_number` sea vacío, '0',
   'NONE' o 'BASE IMPONIBLE' (headers repetidos en medio de datos).
+
+## Tests de integración con Excel real
+
+El archivo tests/fixtures/Libro_COMPRAS_VENTAS_Ficticio.xlsx
+contiene 10 facturas de compra y 10 de venta (1 anulada) con
+datos ficticios. Los siguientes tests validan el flujo
+end-to-end:
+
+- test_import_real_fixture_purchase_12_lines
+- test_import_real_fixture_sale_9_lines
+- test_import_real_fixture_both_creates_21_lines
+- test_import_real_fixture_purchase_idempotent
+- test_import_real_fixture_purchase_totals_matches_excel
+  (verificado con mutation test: cambiar base_general del
+  fixture hace fallar el test)
+- test_import_real_fixture_sale_anulada_skipped
+
+## Notas de implementación adicionales
+
+- El modelo vat.book.line unifica base_import_16 y vat_import_16
+  dentro de base_general y vat_general (decisión de Fase F).
+  El helper _compute_expected_totals_from_fixture hace la misma
+  combinación al leer el Excel.
+- El parser no usa read_only=True en openpyxl porque el acceso
+  por índice de fila devuelve filas vacías.
+- El header 'IVA Importación 16%' del fixture (sin 'de') se
+  mapea via alias en VAT_BOOK_HEADER_MAP.
