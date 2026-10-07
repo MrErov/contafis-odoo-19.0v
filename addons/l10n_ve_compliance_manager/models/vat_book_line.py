@@ -187,3 +187,24 @@ class VatBookLine(models.Model):
             vals['wizard_id'] = wizard_dummy.id
             self.create(vals)
         return True
+
+    def action_open_export_wizard(self):
+        """Abre el wizard de exportación con el período de las líneas seleccionadas."""
+        self.ensure_one()
+        # Si hay múltiples líneas seleccionadas, usar el período de la primera
+        period_month = self.period_month
+        company_id = self.company_id.id
+        book_type = self.book_type
+
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Exportar Libro IVA a Excel',
+            'res_model': 'l10n.ve.vat.book.export.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_period_month': period_month,
+                'default_company_id': company_id,
+                'default_book_type': book_type,
+            },
+        }

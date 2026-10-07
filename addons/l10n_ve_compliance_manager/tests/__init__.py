@@ -10,3 +10,4 @@ from . import test_vat_book_line
 from . import test_vat_book_generate
 from . import test_vat_return
 from . import test_import_vat_book
+from . import test_vat_book_export

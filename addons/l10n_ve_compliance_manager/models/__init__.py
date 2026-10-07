@@ -20,3 +20,4 @@ from . import vat_book_line
 from . import vat_book_generate
 from . import vat_book_headers
 from . import vat_return
+from . import vat_book_export_wizard

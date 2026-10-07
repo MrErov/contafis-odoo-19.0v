@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Wizard Form View - Export Libro IVA -->
+        <record id="view_l10n_ve_vat_book_export_wizard_form" model="ir.ui.view">
+            <field name="name">l10n.ve.vat.book.export.wizard.form</field>
+            <field name="model">l10n.ve.vat.book.export.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Exportar Libro de Compras/Ventas a Excel">
+                    <header>
+                        <button name="action_export_xlsx" string="Exportar a Excel"
+                                type="object" class="btn-primary"/>
+                        <button name="action_cancel" string="Cancelar"
+                                type="object" class="btn-secondary" special="cancel"/>
+                    </header>
+                    <sheet>
+                        <group string="Configuración de Exportación">
+                            <group>
+                                <field name="period_month" required="1"/>
+                                <field name="company_id" required="1"
+                                       options="{'no_create': True, 'no_open': True}"/>
+                            </group>
+                            <group>
+                                <field name="book_type" required="1"/>
+                            </group>
+                        </group>
+                        <div class="alert alert-info mt-3" role="status">
+                            <strong>Instrucciones:</strong>
+                            <ul>
+                                <li>Seleccione el período (formato YYYY-MM, ej. 2026-08).</li>
+                                <li>Seleccione el tipo de libro a exportar.</li>
+                                <li>Pulse "Exportar a Excel" para generar y descargar el archivo.</li>
+                            </ul>
+                        </div>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <!-- Wizard Action - disponible en menú Actions (⚙️) del list/form view -->
+        <record id="action_l10n_ve_vat_book_export_wizard" model="ir.actions.act_window">
+            <field name="name">Exportar Libro IVA a Excel</field>
+            <field name="res_model">l10n.ve.vat.book.export.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+            <field name="binding_model_id" ref="model_l10n_ve_vat_book_line"/>
+            <field name="binding_view_types">list,form</field>
+            <field name="context">{'default_book_type': 'purchase'}</field>
+        </record>
+    </data>
+</odoo>
