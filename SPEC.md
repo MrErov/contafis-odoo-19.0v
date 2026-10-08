@@ -113,6 +113,24 @@ para contadores en Venezuela. Multi-cliente (el contador gestiona varias empresa
 - ✅ Corrección de conceptos del PDF con nombres SENIAT literales
 - ✅ 107 tests pasando (96 + 11 nuevos)
 
+### DevOps.1: Pre-commit hooks + ruff config (COMPLETADA)
+- ✅ pyproject.toml con ruff (E/W/F/I/UP, line-length=120)
+- ✅ .pre-commit-config.yaml con 7 hooks (trailing-whitespace, end-of-file-fixer, check-yaml, check-xml, check-added-large-files, mixed-line-ending, ruff)
+- ✅ pylint-odoo comentado (sin release 19.x aún)
+- ✅ Commit: 62b82e0
+
+### DevOps.1c: Limpieza ruff (COMPLETADA)
+- ✅ 56 issues residuales resueltos
+- ✅ F601: dict key duplicada en import_wizard.action_reset
+- ✅ E741: 25 lambdas `l` → `line` (5 archivos)
+- ✅ UP038: 9 isinstance → union syntax (3 archivos)
+- ✅ F841: 18 variables no usadas (9 archivos, 10 CONVERTIR por side effects, 8 ELIMINAR)
+- ✅ UP031: 4 % format → f-strings (test_document_types.py)
+- ✅ F401: importlib.util.find_spec para PIL opcional
+- ✅ Commits: 06e2694, bba5bde, e5464da
+- ✅ Ruff limpio en E/W/F/I/UP sobre todo el repo
+- ✅ 107 tests pasando
+
 ### Trabajo Futuro
 - ⬜ Spec 11: Conciliación ISLR
 - ⬜ Migrar `_sql_constraints` a `models.Constraint` (Odoo 19 lo
@@ -123,12 +141,16 @@ para contadores en Venezuela. Multi-cliente (el contador gestiona varias empresa
 - ⬜ Importación de asientos contables (account.move)
 - ⬜ Integración MCP Odoo (mart337i/odoo-dev-mcp)
 - ⬜ Fix RIF None en export XLSX cuando company.vat está vacío
+- ⬜ DevOps.1b: ruff-format (opcional, reformatearía 30+ archivos)
+- ⬜ DevOps.2: GitHub Actions CI (lint + test jobs)
 
 ## Estado del Portafolio
 
 - ✅ README.md, CHANGELOG.md, LICENSE (LGPL-3), CONTRIBUTING.md
 - ✅ Metodología SDD (AGENTS.md, docs/specs/, opencode.json)
 - ✅ 107 tests pasando
+- ✅ Ruff limpio en E/W/F/I/UP (nuevo)
+- ✅ Pre-commit configurado con ruff (nuevo)
 - ✅ Comandos OpenCode en `.opencode/commands/`
 - ⬜ Capturas de pantalla en docs/screenshots/
 - ⬜ Topics GitHub
