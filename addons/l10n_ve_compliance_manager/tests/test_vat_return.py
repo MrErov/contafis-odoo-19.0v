@@ -379,3 +379,25 @@ class TestVatReturn(TransactionCase):
         }
         self.assertEqual(items_found, item_codes_expected)
         self.assertEqual(len(items_found), 59)
+
+    def test_pdf_vat_return_conceptos_corregidos(self):
+        """Verifica que el PDF QWeb usa conceptos SENIAT literales."""
+        template = self.env.ref(
+            'l10n_ve_compliance_manager.report_vat_return_99030'
+        )
+        arch = template.arch or ''
+        
+        # Conceptos clave corregidos (SENIAT exactos)
+        self.assertIn('TOTAL IMPUESTO DEL PERÍODO', arch)
+        self.assertIn('Total a Pagar', arch)
+        self.assertIn('Créditos adquiridos por cesión de retenciones', arch)
+        self.assertIn('Créditos fiscales totalmente deducibles', arch)
+        self.assertIn('Impuesto pagado en declaración(es) sustituida(s)', arch)
+        
+        # Verificar que conceptos viejos NO están
+        self.assertNotIn('IVA a pagar', arch)
+        self.assertNotIn('Observaciones', arch)
+        self.assertNotIn('Total a pagar', arch)  # old concept for item_72
+        self.assertNotIn('Otros créditos', arch)  # old concept for item_70
+        self.assertNotIn('Excedente a favor', arch)  # old concept for item_22
+        self.assertNotIn('Excedente arrastre', arch)  # old concept for item_20

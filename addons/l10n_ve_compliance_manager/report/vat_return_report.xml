@@ -52,77 +52,77 @@
                     <h3>DÉBITOS FISCALES</h3>
                     <table>
                         <tr><th>Ítem</th><th>Concepto</th><th>Monto (Bs.)</th></tr>
-                        <tr><td class="label">40</td><td>Ventas no sujetas</td><td t-esc="format_amount(doc.item_40)"/></tr>
-                        <tr><td class="label">41</td><td>Exportaciones</td><td t-esc="format_amount(doc.item_41)"/></tr>
-                        <tr><td class="label">42</td><td>Base gravada 16%</td><td t-esc="format_amount(doc.item_42)"/></tr>
-                        <tr><td class="label">43</td><td>IVA 16% ventas</td><td t-esc="format_amount(doc.item_43)"/></tr>
-                        <tr><td class="label">442</td><td>Base gravada + adicional</td><td t-esc="format_amount(doc.item_442)"/></tr>
-                        <tr><td class="label">443</td><td>Base alícuota reducida (8%)</td><td t-esc="format_amount(doc.item_443)"/></tr>
-                        <tr><td class="label">452</td><td>IVA adicional</td><td t-esc="format_amount(doc.item_452)"/></tr>
-                        <tr><td class="label">453</td><td>IVA reducido (8%)</td><td t-esc="format_amount(doc.item_453)"/></tr>
-                        <tr><td class="label total">46</td><td>Total bases ventas</td><td class="total" t-esc="format_amount(doc.item_46)"/></tr>
-                        <tr><td class="label total">47</td><td>Total IVA ventas (43+452+453)</td><td class="total" t-esc="format_amount(doc.item_47)"/></tr>
-                        <tr><td class="label">48</td><td>Ajuste a débitos</td><td t-esc="format_amount(doc.item_48)"/></tr>
+                        <tr><td class="label">40</td><td>Ventas internas no gravadas</td><td t-esc="format_amount(doc.item_40)"/></tr>
+                        <tr><td class="label">41</td><td>Ventas de exportación</td><td t-esc="format_amount(doc.item_41)"/></tr>
+                        <tr><td class="label">42</td><td>Ventas internas gravadas por alícuota general 16%</td><td t-esc="format_amount(doc.item_42)"/></tr>
+                        <tr><td class="label">43</td><td>IVA ventas 16%</td><td t-esc="format_amount(doc.item_43)"/></tr>
+                        <tr><td class="label">442</td><td>Ventas internas gravadas por alícuota general + adicional</td><td t-esc="format_amount(doc.item_442)"/></tr>
+                        <tr><td class="label">443</td><td>Ventas internas gravadas por alícuota reducida</td><td t-esc="format_amount(doc.item_443)"/></tr>
+                        <tr><td class="label">452</td><td>IVA adicional ventas</td><td t-esc="format_amount(doc.item_452)"/></tr>
+                        <tr><td class="label">453</td><td>IVA reducido ventas</td><td t-esc="format_amount(doc.item_453)"/></tr>
+                        <tr><td class="label total">46</td><td>Total ventas y débitos fiscales para efectos de determinación</td><td class="total" t-esc="format_amount(doc.item_46)"/></tr>
+                        <tr><td class="label total">47</td><td>Total IVA ventas</td><td class="total" t-esc="format_amount(doc.item_47)"/></tr>
+                        <tr><td class="label">48</td><td>Ajuste a los débitos fiscales de períodos anteriores</td><td t-esc="format_amount(doc.item_48)"/></tr>
                         <tr><td class="label">80</td><td>Ajuste por prorrata</td><td t-esc="format_amount(doc.item_80)"/></tr>
-                        <tr><td class="label total">49</td><td>TOTAL DÉBITOS (47+48-80)</td><td class="total" t-esc="format_amount(doc.item_49)"/></tr>
+                        <tr><td class="label total">49</td><td>Total débitos fiscales</td><td class="total" t-esc="format_amount(doc.item_49)"/></tr>
                     </table>
 
                     <!-- CRÉDITOS -->
                     <h3>CRÉDITOS FISCALES</h3>
                     <table>
                         <tr><th>Ítem</th><th>Concepto</th><th>Monto (Bs.)</th></tr>
-                        <tr><td class="label">30</td><td>Compras sin crédito fiscal</td><td t-esc="format_amount(doc.item_30)"/></tr>
-                        <tr><td class="label">31</td><td>Importaciones</td><td t-esc="format_amount(doc.item_31)"/></tr>
-                        <tr><td class="label">32</td><td>Base gravada 16% importaciones</td><td t-esc="format_amount(doc.item_32)"/></tr>
-                        <tr><td class="label">312</td><td>Base gravada + adicional importaciones</td><td t-esc="format_amount(doc.item_312)"/></tr>
-                        <tr><td class="label">313</td><td>Base reducida importaciones</td><td t-esc="format_amount(doc.item_313)"/></tr>
-                        <tr><td class="label">322</td><td>IVA 16% importaciones</td><td t-esc="format_amount(doc.item_322)"/></tr>
-                        <tr><td class="label">323</td><td>IVA adicional importaciones</td><td t-esc="format_amount(doc.item_323)"/></tr>
-                        <tr><td class="label">33</td><td>Base gravada 16% compras</td><td t-esc="format_amount(doc.item_33)"/></tr>
-                        <tr><td class="label">34</td><td>IVA 16% compras</td><td t-esc="format_amount(doc.item_34)"/></tr>
-                        <tr><td class="label">332</td><td>Base gravada + adicional compras</td><td t-esc="format_amount(doc.item_332)"/></tr>
-                        <tr><td class="label">333</td><td>Base reducida (8%) compras</td><td t-esc="format_amount(doc.item_333)"/></tr>
+                        <tr><td class="label">30</td><td>Compras no gravadas y/o sin derecho a crédito fiscal</td><td t-esc="format_amount(doc.item_30)"/></tr>
+                        <tr><td class="label">31</td><td>Importación gravadas por alícuota general</td><td t-esc="format_amount(doc.item_31)"/></tr>
+                        <tr><td class="label">32</td><td>IVA importación 16%</td><td t-esc="format_amount(doc.item_32)"/></tr>
+                        <tr><td class="label">312</td><td>Importación gravadas por alícuota general + adicional</td><td t-esc="format_amount(doc.item_312)"/></tr>
+                        <tr><td class="label">313</td><td>Importación gravadas por alícuota reducida</td><td t-esc="format_amount(doc.item_313)"/></tr>
+                        <tr><td class="label">322</td><td>IVA importación adicional</td><td t-esc="format_amount(doc.item_322)"/></tr>
+                        <tr><td class="label">323</td><td>IVA importación reducida</td><td t-esc="format_amount(doc.item_323)"/></tr>
+                        <tr><td class="label">33</td><td>Compras internas gravadas solo por alícuota general 16%</td><td t-esc="format_amount(doc.item_33)"/></tr>
+                        <tr><td class="label">34</td><td>IVA compras 16%</td><td t-esc="format_amount(doc.item_34)"/></tr>
+                        <tr><td class="label">332</td><td>Compras internas gravadas por alícuota general + adicional</td><td t-esc="format_amount(doc.item_332)"/></tr>
+                        <tr><td class="label">333</td><td>Compras internas gravadas por alícuota reducida</td><td t-esc="format_amount(doc.item_333)"/></tr>
                         <tr><td class="label">342</td><td>IVA adicional compras</td><td t-esc="format_amount(doc.item_342)"/></tr>
-                        <tr><td class="label">343</td><td>IVA reducido (8%) compras</td><td t-esc="format_amount(doc.item_343)"/></tr>
-                        <tr><td class="label total">35</td><td>Total bases compras</td><td class="total" t-esc="format_amount(doc.item_35)"/></tr>
+                        <tr><td class="label">343</td><td>IVA reducido compras</td><td t-esc="format_amount(doc.item_343)"/></tr>
+                        <tr><td class="label total">35</td><td>Total compras y créditos fiscales del período</td><td class="total" t-esc="format_amount(doc.item_35)"/></tr>
                         <tr><td class="label total">36</td><td>Total IVA compras</td><td class="total" t-esc="format_amount(doc.item_36)"/></tr>
-                        <tr><td class="label">37</td><td>Créditos por prorrata</td><td t-esc="format_amount(doc.item_37)"/></tr>
-                        <tr><td class="label">70</td><td>Otros créditos</td><td t-esc="format_amount(doc.item_70)"/></tr>
-                        <tr><td class="label">38</td><td>Ajuste a créditos</td><td t-esc="format_amount(doc.item_38)"/></tr>
-                        <tr><td class="label">71</td><td>Excedente período anterior</td><td t-esc="format_amount(doc.item_71)"/></tr>
-                        <tr><td class="label">20</td><td>Excedente arrastre (item 60 ant.)</td><td t-esc="format_amount(doc.item_20)"/></tr>
-                        <tr><td class="label">21</td><td>Ajuste excedente anterior</td><td t-esc="format_amount(doc.item_21)"/></tr>
-                        <tr><td class="label">81</td><td>Prorrata excedente anterior</td><td t-esc="format_amount(doc.item_81)"/></tr>
-                        <tr><td class="label">82</td><td>Ajuste prorrata</td><td t-esc="format_amount(doc.item_82)"/></tr>
-                        <tr><td class="label total">39</td><td>TOTAL CRÉDITOS (71+20-21-81+38-82)</td><td class="total" t-esc="format_amount(doc.item_39)"/></tr>
+                        <tr><td class="label">37</td><td>Créditos fiscales producto del porcentaje de prorrata</td><td t-esc="format_amount(doc.item_37)"/></tr>
+                        <tr><td class="label">70</td><td>Créditos fiscales totalmente deducibles</td><td t-esc="format_amount(doc.item_70)"/></tr>
+                        <tr><td class="label">38</td><td>Ajuste a los créditos fiscales de períodos anteriores</td><td t-esc="format_amount(doc.item_38)"/></tr>
+                        <tr><td class="label">71</td><td>Total créditos fiscales deducibles</td><td t-esc="format_amount(doc.item_71)"/></tr>
+                        <tr><td class="label">20</td><td>Excedente créditos fiscales del mes anterior</td><td t-esc="format_amount(doc.item_20)"/></tr>
+                        <tr><td class="label">21</td><td>Reintegro solicitado (solo exportadores)</td><td t-esc="format_amount(doc.item_21)"/></tr>
+                        <tr><td class="label">81</td><td>Reintegro solicitado (entes exonerados)</td><td t-esc="format_amount(doc.item_81)"/></tr>
+                        <tr><td class="label">82</td><td>Certificados de débitos fiscales exonerados registrados en el período</td><td t-esc="format_amount(doc.item_82)"/></tr>
+                        <tr><td class="label total">39</td><td>Total créditos fiscales</td><td class="total" t-esc="format_amount(doc.item_39)"/></tr>
                     </table>
 
                     <!-- AUTOLIQUIDACIÓN -->
                     <h3>AUTOLIQUIDACIÓN</h3>
                     <table>
                         <tr><th>Ítem</th><th>Concepto</th><th>Monto (Bs.)</th></tr>
-                        <tr><td class="label">53</td><td>IVA a pagar</td><td t-esc="format_amount(doc.item_53)"/></tr>
-                        <tr><td class="label">60</td><td>Excedente crédito fiscal</td><td t-esc="format_amount(doc.item_60)"/></tr>
-                        <tr><td class="label">22</td><td>Excedente a favor</td><td t-esc="format_amount(doc.item_22)"/></tr>
-                        <tr><td class="label">51</td><td>Pago parcial</td><td t-esc="format_amount(doc.item_51)"/></tr>
-                        <tr><td class="label">24</td><td>Saldo a favor</td><td t-esc="format_amount(doc.item_24)"/></tr>
-                        <tr><td class="label">78</td><td>Intereses</td><td t-esc="format_amount(doc.item_78)"/></tr>
-                        <tr><td class="label">54</td><td>Multas</td><td t-esc="format_amount(doc.item_54)"/></tr>
-                        <tr><td class="label">66</td><td>Retenciones IVA período</td><td t-esc="format_amount(doc.item_66)"/></tr>
-                        <tr><td class="label">72</td><td>Total a pagar</td><td t-esc="format_amount(doc.item_72)"/></tr>
-                        <tr><td class="label">73</td><td>Total pagado</td><td t-esc="format_amount(doc.item_73)"/></tr>
-                        <tr><td class="label">74</td><td>Diferencia</td><td t-esc="format_amount(doc.item_74)"/></tr>
-                        <tr><td class="label">55</td><td>IVA retenido por tercero</td><td t-esc="format_amount(doc.item_55)"/></tr>
-                        <tr><td class="label">67</td><td>IVA percibido</td><td t-esc="format_amount(doc.item_67)"/></tr>
-                        <tr><td class="label">56</td><td>Base IVA percibido</td><td t-esc="format_amount(doc.item_56)"/></tr>
-                        <tr><td class="label">57</td><td>IVA sujeto a percepción</td><td t-esc="format_amount(doc.item_57)"/></tr>
-                        <tr><td class="label">68</td><td>Total percepciones</td><td t-esc="format_amount(doc.item_68)"/></tr>
-                        <tr><td class="label">75</td><td>Compensaciones</td><td t-esc="format_amount(doc.item_75)"/></tr>
-                        <tr><td class="label">76</td><td>Ajustes varios</td><td t-esc="format_amount(doc.item_76)"/></tr>
-                        <tr><td class="label">77</td><td>Créditos varios</td><td t-esc="format_amount(doc.item_77)"/></tr>
-                        <tr><td class="label">58</td><td>Total ajustes</td><td t-esc="format_amount(doc.item_58)"/></tr>
-                        <tr><td class="label">69</td><td>Saldo final</td><td t-esc="format_amount(doc.item_69)"/></tr>
-                        <tr><td class="label">90</td><td>Observaciones</td><td t-esc="format_amount(doc.item_90)"/></tr>
+                        <tr><td class="label">53</td><td>TOTAL IMPUESTO DEL PERÍODO</td><td t-esc="format_amount(doc.item_53)"/></tr>
+                        <tr><td class="label">60</td><td>Excedente crédito fiscal para el mes siguiente</td><td t-esc="format_amount(doc.item_60)"/></tr>
+                        <tr><td class="label">22</td><td>Impuesto pagado en declaración(es) sustituida(s)</td><td t-esc="format_amount(doc.item_22)"/></tr>
+                        <tr><td class="label">51</td><td>Retenciones descontadas en declaración(es) sustituida(s)</td><td t-esc="format_amount(doc.item_51)"/></tr>
+                        <tr><td class="label">24</td><td>Percepciones descontadas en declaración(es) sustituida(s)</td><td t-esc="format_amount(doc.item_24)"/></tr>
+                        <tr><td class="label">78</td><td>Sub-total de impuesto a pagar</td><td t-esc="format_amount(doc.item_78)"/></tr>
+                        <tr><td class="label">54</td><td>Retenciones acumuladas por descontar</td><td t-esc="format_amount(doc.item_54)"/></tr>
+                        <tr><td class="label">66</td><td>Retenciones del período</td><td t-esc="format_amount(doc.item_66)"/></tr>
+                        <tr><td class="label">72</td><td>Créditos adquiridos por cesión de retenciones</td><td t-esc="format_amount(doc.item_72)"/></tr>
+                        <tr><td class="label">73</td><td>Recuperación de retenciones solicitado</td><td t-esc="format_amount(doc.item_73)"/></tr>
+                        <tr><td class="label">74</td><td>Total retenciones</td><td t-esc="format_amount(doc.item_74)"/></tr>
+                        <tr><td class="label">55</td><td>Retenciones soportadas y descontadas</td><td t-esc="format_amount(doc.item_55)"/></tr>
+                        <tr><td class="label">67</td><td>Saldo de retenciones de IVA no aplicado</td><td t-esc="format_amount(doc.item_67)"/></tr>
+                        <tr><td class="label">56</td><td>Sub-total impuesto a pagar</td><td t-esc="format_amount(doc.item_56)"/></tr>
+                        <tr><td class="label">57</td><td>Percepciones en importaciones pendientes por descontar</td><td t-esc="format_amount(doc.item_57)"/></tr>
+                        <tr><td class="label">68</td><td>Percepciones del período</td><td t-esc="format_amount(doc.item_68)"/></tr>
+                        <tr><td class="label">75</td><td>Créditos adquiridos por cesión de retenciones (percepciones)</td><td t-esc="format_amount(doc.item_75)"/></tr>
+                        <tr><td class="label">76</td><td>Recuperación de percepciones solicitado</td><td t-esc="format_amount(doc.item_76)"/></tr>
+                        <tr><td class="label">77</td><td>Total percepciones</td><td t-esc="format_amount(doc.item_77)"/></tr>
+                        <tr><td class="label">58</td><td>Percepciones en aduanas descontadas</td><td t-esc="format_amount(doc.item_58)"/></tr>
+                        <tr><td class="label">69</td><td>Saldo de percepciones en aduana no aplicado</td><td t-esc="format_amount(doc.item_69)"/></tr>
+                        <tr><td class="label">90</td><td>Total a Pagar</td><td t-esc="format_amount(doc.item_90)"/></tr>
                     </table>
 
                     <div style="margin-top: 20px; text-align: center; font-size: 8px; color: #666;">
