@@ -731,22 +731,22 @@ class TestImportVatBook(TransactionCase):
 
             for r in range(data_start, data_end + 1):
                 v = ws.cell(row=r, column=23).value
-                if isinstance(v, (int, float)):
+                if isinstance(v, int | float):
                     base_general += v
                 v = ws.cell(row=r, column=24).value
-                if isinstance(v, (int, float)):
+                if isinstance(v, int | float):
                     vat_general += v
                 v = ws.cell(row=r, column=21).value
-                if isinstance(v, (int, float)):
+                if isinstance(v, int | float):
                     base_no_credit += v
                 v = ws.cell(row=r, column=19).value
-                if isinstance(v, (int, float)):
+                if isinstance(v, int | float):
                     base_import_16 += v
                 v = ws.cell(row=r, column=20).value
-                if isinstance(v, (int, float)):
+                if isinstance(v, int | float):
                     vat_import_16 += v
                 v = ws.cell(row=r, column=29).value
-                if isinstance(v, (int, float)):
+                if isinstance(v, int | float):
                     vat_retained_vendor += v
 
             # Replicar lógica del import: combinar import en general
@@ -773,7 +773,7 @@ class TestImportVatBook(TransactionCase):
             for r in range(data_start, data_end + 1):
                 for key, col in cols.items():
                     v = ws.cell(row=r, column=col).value
-                    if isinstance(v, (int, float)):
+                    if isinstance(v, int | float):
                         totals[key] += v
             return totals
 

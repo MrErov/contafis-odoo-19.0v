@@ -161,7 +161,7 @@ class VatBookExportWizard(models.TransientModel):
                 cell = ws.cell(row=row_idx, column=col_idx, value=value)
                 cell.number_format = number_format
                 cell.border = thin_border
-                if isinstance(value, (int, float)):
+                if isinstance(value, int | float):
                     totals[header] += value
             row_idx += 1
 

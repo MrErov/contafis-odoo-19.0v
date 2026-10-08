@@ -1277,7 +1277,7 @@ class ImportWizard(models.TransientModel):
         """
         if value is None or value == '':
             return None
-        if isinstance(value, (int, float)):
+        if isinstance(value, int | float):
             return float(value)
         s = str(value).strip()
         if not s:
