@@ -1,4 +1,5 @@
 from collections import defaultdict
+
 from markupsafe import Markup, escape
 from odoo import api, fields, models
 

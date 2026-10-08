@@ -1,4 +1,5 @@
 import base64
+
 from odoo import api, fields, models
 from odoo.exceptions import UserError
 from odoo.tools import image as image_tools
@@ -47,7 +48,7 @@ class CarteleraEvidenceWizard(models.TransientModel):
 
     def _compress_image(self, image_data):
         """Comprime una imagen a 1024x1024 manteniendo aspect ratio.
-        
+
         Args:
             image_data: base64-encoded image data
         Returns:

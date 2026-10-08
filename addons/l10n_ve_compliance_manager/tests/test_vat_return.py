@@ -1,11 +1,9 @@
+import base64
+from io import BytesIO
+
+import openpyxl
 from odoo import fields
 from odoo.tests import TransactionCase, tagged
-from odoo.exceptions import UserError, ValidationError
-from odoo.tools import mute_logger
-import psycopg2
-import base64
-import openpyxl
-from io import BytesIO
 
 
 @tagged('post_install', '-at_install')
@@ -222,7 +220,7 @@ class TestVatReturn(TransactionCase):
         constraints = model._sql_constraints
         constraint_names = [c[0] for c in constraints]
         self.assertIn('unique_return', constraint_names)
-        
+
         unique_constraint = next(c for c in constraints if c[0] == 'unique_return')
         self.assertIn('company_id', unique_constraint[1])
         self.assertIn('period_month', unique_constraint[1])
@@ -386,14 +384,14 @@ class TestVatReturn(TransactionCase):
             'l10n_ve_compliance_manager.report_vat_return_99030'
         )
         arch = template.arch or ''
-        
+
         # Conceptos clave corregidos (SENIAT exactos)
         self.assertIn('TOTAL IMPUESTO DEL PERÍODO', arch)
         self.assertIn('Total a Pagar', arch)
         self.assertIn('Créditos adquiridos por cesión de retenciones', arch)
         self.assertIn('Créditos fiscales totalmente deducibles', arch)
         self.assertIn('Impuesto pagado en declaración(es) sustituida(s)', arch)
-        
+
         # Verificar que conceptos viejos NO están
         self.assertNotIn('IVA a pagar', arch)
         self.assertNotIn('Observaciones', arch)

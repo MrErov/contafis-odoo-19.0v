@@ -1,9 +1,10 @@
 import base64
 import io
-from odoo import fields
-from odoo.tests import TransactionCase, tagged
-from odoo.exceptions import ValidationError
+
 from dateutil.relativedelta import relativedelta
+from odoo import fields
+from odoo.exceptions import ValidationError
+from odoo.tests import TransactionCase, tagged
 
 try:
     from PIL import Image as PILImage
@@ -154,7 +155,6 @@ class TestCarteleraEvidence(TransactionCase):
 
     def test_evidence_image_size_limit(self):
         """Crear evidence con imagen > 5 MB debe lanzar ValidationError."""
-        import base64
         # Crear imagen simulada de 6 MB (base64 de 6MB)
         large_image = base64.b64encode(b'x' * (6 * 1024 * 1024)).decode()
         with self.assertRaises(ValidationError) as cm:
@@ -164,7 +164,6 @@ class TestCarteleraEvidence(TransactionCase):
 
     def test_evidence_image_compression(self):
         """Wizard comprime imagen de 3 MB → evidence guardada pesa menos."""
-        import base64
         # Usar PNG real pequeño (1x1 px transparente) que image_process puede comprimir
         real_png = b'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+XfJsAAAAASUVORK5CYII='
         # Repetir para simular ~3MB (en test real usaríamos imagen real grande)
@@ -189,27 +188,27 @@ class TestCarteleraEvidence(TransactionCase):
         if not HAS_PIL:
             self.skipTest('PIL/Pillow no disponible, saltando test de validación de imagen')
         import base64
-        import io
+
         from PIL import Image as PILImage
-        
+
         # Crear imagen PNG real de 2000x2000 (mayor que 1024x1024 para probar compresión)
         img = PILImage.new('RGB', (2000, 2000), color='red')
         buf = io.BytesIO()
         img.save(buf, format='PNG')
         original_b64 = base64.b64encode(buf.getvalue()).decode()
-        
+
         # Crear evidence directamente (bypassa wizard para testear modelo)
         evidence = self.Evidence.create({
             'cartelera_status_id': self.status.id,
             'filename': 'test_large.png',
             'image': original_b64,
         })
-        
+
         # Verificar que la imagen guardada es decodificable
         img_bytes = base64.b64decode(evidence.image)
         img_restored = PILImage.open(io.BytesIO(img_bytes))
         img_restored.verify()  # lanza excepción si está corrupta
-        
+
         # Verificar dimensiones (deben ser 1024x1024 tras compresión)
         # Nota: el modelo no comprime, el wizard sí. Este test valida que
         # si pasamos una imagen grande al wizard, se comprime correctamente.

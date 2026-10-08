@@ -1,10 +1,9 @@
-from io import BytesIO
 import base64
-import openpyxl
+from io import BytesIO
 
-from odoo import fields
-from odoo.tests import TransactionCase, tagged
+import openpyxl
 from odoo.exceptions import UserError
+from odoo.tests import TransactionCase, tagged
 
 
 @tagged('post_install', '-at_install')
@@ -22,34 +21,34 @@ class TestImportCartelera(TransactionCase):
     def _create_cartelera_excel(self, rows_data, sheet_name='enero'):
         """
         Genera un Excel en memoria con estructura de cartelera fiscal.
-        
+
         Args:
             rows_data: Lista de dicts con claves:
                 - rif: RIF de la empresa
                 - name: Nombre de la empresa
                 - statuses: dict {C01: True, C02: False, ...} (36 códigos)
             sheet_name: Nombre de la hoja (default 'enero')
-        
+
         Returns:
             bytes: Contenido del archivo xlsx
         """
         wb = openpyxl.Workbook()
         ws = wb.active
         ws.title = sheet_name
-        
+
         # Filas 1-2: encabezados de sección fusionados (IGNORAR)
         ws.merge_cells('A1:AN1')
         ws['A1'] = 'CARTELERA FISCAL - SENIAT, IVSS, INCES, BANAVIH, MINTRA, ALCALDÍA'
         ws.merge_cells('A2:AN2')
         ws['A2'] = 'Período: Enero 2026'
-        
+
         # Obtener tipos de documento en orden de código C01..C36
         doc_types = self.DocType.search([
             ('required_for', '=', 'company')
         ], order='code')
         codes = [dt.code for dt in doc_types]
         names = [dt.name for dt in doc_types]
-        
+
         # Fila 3: headers con NOMBRES de documentos (no códigos)
         # Enero: RIF en C(3), Nombre en D(4), Docs en E..AN(5..40)
         ws.cell(row=3, column=1, value='Item')
@@ -58,26 +57,26 @@ class TestImportCartelera(TransactionCase):
         ws.cell(row=3, column=4, value='Empresa')
         for i, name in enumerate(names):
             ws.cell(row=3, column=5 + i, value=name)
-        
+
         # Columnas AO, AP: Total y % (IGNORAR)
         ws.cell(row=3, column=41, value='Total')
         ws.cell(row=3, column=42, value='%')
-        
+
         # Filas 4+: datos de empresas
         for row_idx, row_data in enumerate(rows_data, 4):
             ws.cell(row=row_idx, column=3, value=row_data['rif'])  # Col C
             ws.cell(row=row_idx, column=4, value=row_data['name'])  # Col D
             ws.cell(row=row_idx, column=2, value=row_idx - 3)  # Col B: Item
             ws.cell(row=row_idx, column=1, value='')  # Col A
-            
+
             statuses = row_data.get('statuses', {})
             for i, code in enumerate(codes):
                 ws.cell(row=row_idx, column=5 + i, value=statuses.get(code, False))
-            
+
             # Columnas AO, AP vacías
             ws.cell(row=row_idx, column=41, value='')
             ws.cell(row=row_idx, column=42, value='')
-        
+
         output = BytesIO()
         wb.save(output)
         return output.getvalue()
@@ -105,22 +104,22 @@ class TestImportCartelera(TransactionCase):
                 'statuses': {f'C{i:02d}': True for i in range(1, 37)},  # todos True
             },
         ]
-        
+
         excel_content = self._create_cartelera_excel(rows_data, 'enero')
         excel_b64 = base64.b64encode(excel_content)
-        
+
         wizard = self._create_wizard(year=2026, month='1')
         wizard.write({
             'file': excel_b64,
             'filename': 'cartelera_test.xlsx',
         })
-        
+
         # Cargar archivo (para cartelera salta directo a preview)
         wizard.action_load_file()
-        
+
         # Verificar que se crearon 2 líneas
         self.assertEqual(len(wizard.line_ids), 2)
-        
+
         # Verificar datos de la primera línea
         line1 = wizard.line_ids.sorted('row_index')[0]
         self.assertEqual(line1.data['rif'], 'J-31527189-4')
@@ -131,7 +130,7 @@ class TestImportCartelera(TransactionCase):
         self.assertTrue(line1.data['statuses']['C02'])
         self.assertFalse(line1.data['statuses']['C03'])
         self.assertEqual(len(line1.data['statuses']), 36)
-        
+
         # Verificar datos de la segunda línea
         line2 = wizard.line_ids.sorted('row_index')[1]
         self.assertEqual(line2.data['rif'], 'V-12345678-5')
@@ -147,32 +146,32 @@ class TestImportCartelera(TransactionCase):
                 'statuses': {f'C{i:02d}': True for i in range(1, 37)},
             },
         ]
-        
+
         excel_content = self._create_cartelera_excel(rows_data, 'enero')
         excel_b64 = base64.b64encode(excel_content)
-        
+
         wizard = self._create_wizard(year=2026, month='1')
         wizard.write({
             'file': excel_b64,
             'filename': 'cartelera_test.xlsx',
             'mode': 'lax',
         })
-        
+
         wizard.action_load_file()
         # Validar sintaxis
         for line in wizard.line_ids:
             line._validate_syntax()
             line._validate_reference()
             line._validate_business()
-        
+
         # Importar
         wizard.action_import()
-        
+
         # Verificar que se creó partner
         partner = self.Partner.search([('vat', '=', 'J-44444444-4')])
         self.assertTrue(partner.exists())
         self.assertEqual(partner.name, 'Empresa Nueva')
-        
+
         # Verificar que se creó cliente compliance
         client = self.Client.search([('rif', '=', 'J-44444444-4')])
         self.assertTrue(client.exists())
@@ -193,40 +192,40 @@ class TestImportCartelera(TransactionCase):
                 'statuses': {f'C{i:02d}': (i % 2 == 0) for i in range(1, 37)},
             },
         ]
-        
+
         excel_content = self._create_cartelera_excel(rows_data, 'enero')
         excel_b64 = base64.b64encode(excel_content)
-        
+
         wizard = self._create_wizard(year=2026, month='1')
         wizard.write({
             'file': excel_b64,
             'filename': 'cartelera_test.xlsx',
             'mode': 'lax',
         })
-        
+
         wizard.action_load_file()
         for line in wizard.line_ids:
             line._validate_syntax()
             line._validate_reference()
             line._validate_business()
-        
+
         wizard.action_import()
-        
+
         # Verificar snapshots creados
         snapshots = self.Status.search([
             ('year', '=', 2026),
             ('month', '=', '1'),
         ])
-        
+
         # 2 clientes * 36 tipos = 72 snapshots
         self.assertEqual(len(snapshots), 72)
-        
+
         # Verificar cliente 1: todos valid
         client1 = self.Client.search([('rif', '=', 'J-55555555-5')])
         snapshots1 = snapshots.filtered(lambda s: s.client_id == client1)
         self.assertEqual(len(snapshots1), 36)
         self.assertTrue(all(s.state == 'valid' for s in snapshots1))
-        
+
         # Verificar cliente 2: alternados
         client2 = self.Client.search([('rif', '=', 'J-66666666-6')])
         snapshots2 = snapshots.filtered(lambda s: s.client_id == client2)
@@ -246,10 +245,10 @@ class TestImportCartelera(TransactionCase):
                 'statuses': {f'C{i:02d}': True for i in range(1, 37)},
             },
         ]
-        
+
         excel_content = self._create_cartelera_excel(rows_data, 'enero')
         excel_b64 = base64.b64encode(excel_content)
-        
+
         # Primera importación
         wizard1 = self._create_wizard(year=2026, month='1')
         wizard1.write({
@@ -263,13 +262,13 @@ class TestImportCartelera(TransactionCase):
             line._validate_reference()
             line._validate_business()
         wizard1.action_import()
-        
+
         snapshots_after_first = self.Status.search_count([
             ('year', '=', 2026),
             ('month', '=', '1'),
         ])
         self.assertEqual(snapshots_after_first, 36)
-        
+
         # Segunda importación (mismo archivo)
         wizard2 = self._create_wizard(year=2026, month='1')
         wizard2.write({
@@ -283,7 +282,7 @@ class TestImportCartelera(TransactionCase):
             line._validate_reference()
             line._validate_business()
         wizard2.action_import()
-        
+
         # Verificar que no se duplicaron
         snapshots_after_second = self.Status.search_count([
             ('year', '=', 2026),
@@ -301,26 +300,26 @@ class TestImportCartelera(TransactionCase):
                 'statuses': {f'C{i:02d}': True for i in range(1, 37)},
             },
         ]
-        
+
         # Crear Excel con hoja 'invalid' en lugar de 'enero'
         excel_content = self._create_cartelera_excel(rows_data, 'invalid')
         excel_b64 = base64.b64encode(excel_content)
-        
+
         wizard = self._create_wizard(year=2026, month='1')
         wizard.write({
             'file': excel_b64,
             'filename': 'cartelera_test.xlsx',
         })
-        
+
         with self.assertRaises(UserError) as cm:
             wizard.action_load_file()
-        
+
         self.assertIn("no existe en el archivo", str(cm.exception))
 
     def test_validate_business_cartelera(self):
         """Validación nivel 3 para cartelera."""
         wizard = self._create_wizard(year=2026, month='1')
-        
+
         # Test 1: RIF vacío
         line = self.env['l10n.ve.import.line'].create({
             'wizard_id': wizard.id,
@@ -337,7 +336,7 @@ class TestImportCartelera(TransactionCase):
         line._validate_business()
         self.assertEqual(line.state, 'error')
         self.assertIn('rif no puede estar vacío', line.error_msg)
-        
+
         # Test 2: Year fuera de rango
         line2 = self.env['l10n.ve.import.line'].create({
             'wizard_id': wizard.id,
@@ -354,7 +353,7 @@ class TestImportCartelera(TransactionCase):
         line2._validate_business()
         self.assertEqual(line2.state, 'error')
         self.assertIn('year debe estar entre 2020 y 2100', line2.error_msg)
-        
+
         # Test 3: Month inválido
         line3 = self.env['l10n.ve.import.line'].create({
             'wizard_id': wizard.id,
@@ -371,7 +370,7 @@ class TestImportCartelera(TransactionCase):
         line3._validate_business()
         self.assertEqual(line3.state, 'error')
         self.assertIn('month debe estar entre 1 y 12', line3.error_msg)
-        
+
         # Test 4: Statuses faltando claves
         line4 = self.env['l10n.ve.import.line'].create({
             'wizard_id': wizard.id,
@@ -388,7 +387,7 @@ class TestImportCartelera(TransactionCase):
         line4._validate_business()
         self.assertEqual(line4.state, 'error')
         self.assertIn("statuses debe incluir clave 'C02'", line4.error_msg)
-        
+
         # Test 5: Statuses con clave extra
         line5 = self.env['l10n.ve.import.line'].create({
             'wizard_id': wizard.id,
@@ -415,26 +414,26 @@ class TestImportCartelera(TransactionCase):
                 'statuses': {f'C{i:02d}': True for i in range(1, 37)},
             },
         ]
-        
+
         excel_content = self._create_cartelera_excel(rows_data, 'enero')
         excel_b64 = base64.b64encode(excel_content)
-        
+
         wizard = self._create_wizard(year=2026, month='1')
         wizard.write({
             'file': excel_b64,
             'filename': 'cartelera_test.xlsx',
             'mode': 'strict',
         })
-        
+
         wizard.action_load_file()
         for line in wizard.line_ids:
             line._validate_syntax()
             line._validate_reference()
             line._validate_business()
-        
+
         with self.assertRaises(UserError) as cm:
             wizard.action_import()
-        
+
         # En modo strict, action_import lanza error genérico al detectar línea con error
         self.assertIn("abortada en modo estricto", str(cm.exception))
         # El error original está en line.error_msg (pero la transacción hace rollback al lanzar excepción)
@@ -448,44 +447,44 @@ class TestImportCartelera(TransactionCase):
                 'statuses': {f'C{i:02d}': True for i in range(1, 37)},
             },
         ]
-        
+
         excel_content = self._create_cartelera_excel(rows_data, 'enero')
         excel_b64 = base64.b64encode(excel_content)
-        
+
         wizard = self._create_wizard(year=2026, month='1')
         wizard.write({
             'file': excel_b64,
             'filename': 'cartelera_test.xlsx',
             'mode': 'lax',
         })
-        
+
         # Cargar archivo (llama _load_cartelera_file internamente)
         wizard.action_load_file()
-        
+
         # Validar líneas
         for line in wizard.line_ids:
             line._validate_syntax()
             line._validate_reference()
             line._validate_business()
-        
+
         # Ejecutar action_import (debe enrutar a _import_cartelera_line)
         wizard.action_import()
-        
+
         # Verificar que se creó 1 cartelera.status
         snapshots = self.Status.search([
             ('year', '=', 2026),
             ('month', '=', '1'),
         ])
         self.assertEqual(len(snapshots), 36, 'Debe crear 36 snapshots (1 cliente x 36 tipos)')
-        
+
         # Verificar que NO hay líneas con error
         error_lines = wizard.line_ids.filtered(lambda l: l.state == 'error')
         self.assertEqual(len(error_lines), 0, 'No debe haber líneas con error')
-        
+
         # Verificar que la línea quedó en state='imported'
         imported_lines = wizard.line_ids.filtered(lambda l: l.state == 'imported')
         self.assertEqual(len(imported_lines), 1, 'Debe haber 1 línea importada')
-        
+
         # Verificar que se creó el cliente
         client = self.Client.search([('rif', '=', 'J-11111111-1')])
         self.assertTrue(client.exists())

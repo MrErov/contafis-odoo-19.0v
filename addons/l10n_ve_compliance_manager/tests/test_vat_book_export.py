@@ -1,7 +1,7 @@
-from io import BytesIO
 import base64
-import openpyxl
+from io import BytesIO
 
+import openpyxl
 from odoo.tests import TransactionCase, tagged
 
 

@@ -1,10 +1,7 @@
-from io import BytesIO
 import base64
+from io import BytesIO
 
-from odoo import api, fields, models
-from odoo.exceptions import UserError
-from odoo.tools.translate import _
-
+from odoo import fields, models
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 

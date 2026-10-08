@@ -1,13 +1,15 @@
-from . import test_obligation
-from . import test_retention_service
-from . import test_import_wizard
-from . import test_document_types
-from . import test_cartelera_status
-from . import test_import_cartelera
-from . import test_cartelera_evidence
-from . import test_compliance_client
-from . import test_vat_book_line
-from . import test_vat_book_generate
-from . import test_vat_return
-from . import test_import_vat_book
-from . import test_vat_book_export
+from . import (
+    test_cartelera_evidence,
+    test_cartelera_status,
+    test_compliance_client,
+    test_document_types,
+    test_import_cartelera,
+    test_import_vat_book,
+    test_import_wizard,
+    test_obligation,
+    test_retention_service,
+    test_vat_book_export,
+    test_vat_book_generate,
+    test_vat_book_line,
+    test_vat_return,
+)

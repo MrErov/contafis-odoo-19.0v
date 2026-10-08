@@ -1,7 +1,6 @@
+from dateutil.relativedelta import relativedelta
 from odoo import fields
 from odoo.tests import TransactionCase, tagged
-from odoo.exceptions import ValidationError
-from dateutil.relativedelta import relativedelta
 from psycopg2 import IntegrityError
 
 

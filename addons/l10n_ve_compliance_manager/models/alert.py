@@ -36,20 +36,16 @@ class VeAlert(models.Model):
     def _get_wa_text(self):
         self.ensure_one()
         parts = ['Alerta de cumplimiento: {}'.format(self.client_id.name or '')]
-        parts.append('Tipo: {}'.format(self.alert_type))
+        parts.append(f'Tipo: {self.alert_type}')
         if self.obligation_id:
             parts.append(
-                'Obligación: {} (Período: {})'.format(
-                    self.obligation_id.name, self.obligation_id.period
-                )
+                f'Obligación: {self.obligation_id.name} (Período: {self.obligation_id.period})'
             )
             if self.obligation_id.due_date:
-                parts.append('Vence: {}'.format(self.obligation_id.due_date))
+                parts.append(f'Vence: {self.obligation_id.due_date}')
             if self.obligation_id.amount:
                 parts.append(
-                    'Monto: {} {}'.format(
-                        self.obligation_id.amount, self.obligation_id.currency_id.name
-                    )
+                    f'Monto: {self.obligation_id.amount} {self.obligation_id.currency_id.name}'
                 )
         if self.document_id:
             parts.append(
@@ -65,4 +61,4 @@ class VeAlert(models.Model):
         phone = ''.join(re.findall(r'\d+', partner.phone or partner.mobile or ''))
         if not phone:
             return False
-        return 'https://wa.me/{}?text={}'.format(phone, quote(self._get_wa_text()))
+        return f'https://wa.me/{phone}?text={quote(self._get_wa_text())}'

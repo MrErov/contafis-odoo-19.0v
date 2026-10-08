@@ -1,6 +1,5 @@
 from odoo import fields
 from odoo.tests import TransactionCase, tagged
-from odoo.exceptions import UserError
 
 
 @tagged('post_install', '-at_install')

@@ -5,7 +5,7 @@ from odoo.tests import TransactionCase, tagged
 class TestImportWizard(TransactionCase):
     """
     Tests para el wizard de importación.
-    
+
     NOTA sobre tests de RIFs reales:
     Los RIFs de empresas reales (PDVSA, Polar, CANTV, etc.) publicados en
     fuentes web a menudo contienen errores en el dígito verificador.
@@ -104,7 +104,7 @@ class TestImportWizard(TransactionCase):
 
     def test_validate_rif_real_company_1(self):
         """RIF real de empresa conocida (sintético con DV correcto).
-        
+
         NOTA: RIFs reales de empresas (PDVSA, Polar, CANTV, etc.) publicados
         en fuentes web a menudo tienen errores en el dígito verificador.
         Este test usa un RIF sintético con DV correcto según algoritmo SENIAT.
@@ -115,7 +115,7 @@ class TestImportWizard(TransactionCase):
 
     def test_validate_rif_real_company_2(self):
         """RIF real de segunda empresa (sintético con DV correcto).
-        
+
         NOTA: RIFs reales de empresas (PDVSA, Polar, CANTV, etc.) publicados
         en fuentes web a menudo tienen errores en el dígito verificador.
         Este test usa un RIF sintético con DV correcto según algoritmo SENIAT.

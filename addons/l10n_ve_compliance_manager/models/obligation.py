@@ -198,15 +198,13 @@ class VeObligation(models.Model):
             ])
             if exists:
                 continue
-            message = 'Obligación: {} (Período: {})'.format(obligation.name, obligation.period)
+            message = f'Obligación: {obligation.name} (Período: {obligation.period})'
             if obligation.due_date:
-                message += ' Vence: {}'.format(obligation.due_date)
+                message += f' Vence: {obligation.due_date}'
             if obligation.amount:
-                message += ' Monto: {} {}'.format(obligation.amount, obligation.currency_id.name)
+                message += f' Monto: {obligation.amount} {obligation.currency_id.name}'
             alert = alert_obj.create({
-                'name': '{} - {} - {}'.format(
-                    client.name, self.ALERT_TYPE_LABELS.get(alert_type, alert_type), obligation.period
-                ),
+                'name': f'{client.name} - {self.ALERT_TYPE_LABELS.get(alert_type, alert_type)} - {obligation.period}',
                 'client_id': client.id,
                 'obligation_id': obligation.id,
                 'alert_type': alert_type,
@@ -221,7 +219,7 @@ class VeObligation(models.Model):
         if alert.channel == 'whatsapp' and alert.recipient_ids:
             link = alert.get_wa_url(alert.recipient_ids[0].id)
             if link:
-                alert.message = '{}\nWhatsApp: {}'.format(alert.message, link)
+                alert.message = f'{alert.message}\nWhatsApp: {link}'
         if alert.channel == 'whatsapp':
             alert.write({
                 'state': 'sent',

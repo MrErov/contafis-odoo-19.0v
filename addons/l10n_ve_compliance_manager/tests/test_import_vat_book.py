@@ -1,8 +1,8 @@
-from io import BytesIO
 import base64
-import openpyxl
+from io import BytesIO
 from pathlib import Path
 
+import openpyxl
 from odoo.tests import TransactionCase, tagged
 
 
@@ -23,29 +23,29 @@ class TestImportVatBook(TransactionCase):
     def _create_vat_book_excel(self, rows_data, book_type='purchase', sheet_name=None, header_row=3):
         """
         Genera un Excel en memoria con estructura de Libro Compras/Ventas.
-        
+
         Args:
             rows_data: Lista de dicts con datos de facturas
             book_type: 'purchase' o 'sale'
             sheet_name: Nombre de la hoja (default: COMPRAS o VENTAS)
             header_row: Fila 1-based donde están los headers
-            
+
         Returns:
             bytes: Contenido del archivo xlsx
         """
         wb = openpyxl.Workbook()
         ws = wb.active
-        
+
         if sheet_name is None:
             ws.title = 'COMPRAS' if book_type == 'purchase' else 'VENTAS'
         else:
             ws.title = sheet_name
-        
+
         # Filas previas al header (pueden tener título, período, etc.)
         if header_row > 1:
             ws.cell(row=1, column=1, value='LIBRO DE COMPRAS' if book_type == 'purchase' else 'LIBRO DE VENTAS')
             ws.cell(row=2, column=1, value='Mes AGOSTO 2026')
-        
+
         # Headers según tipo
         if book_type == 'purchase':
             headers = [
@@ -83,11 +83,11 @@ class TestImportVatBook(TransactionCase):
                 'Nº Comprob. Retención 75% IVA',
                 'Iva Retenido (por comprador)',
             ]
-        
+
         # Escribir headers en la fila indicada
         for col_idx, header in enumerate(headers, 1):
             ws.cell(row=header_row, column=col_idx, value=header)
-        
+
         # Datos
         for row_idx, row_data in enumerate(rows_data, header_row + 1):
             if book_type == 'purchase':
@@ -122,7 +122,7 @@ class TestImportVatBook(TransactionCase):
                 ws.cell(row=row_idx, column=11, value=row_data.get('vat_general_contrib'))
                 ws.cell(row=row_idx, column=12, value=row_data.get('retention_number'))
                 ws.cell(row=row_idx, column=13, value=row_data.get('vat_retained_buyer'))
-        
+
         output = BytesIO()
         wb.save(output)
         return output.getvalue()
@@ -130,25 +130,25 @@ class TestImportVatBook(TransactionCase):
     def _create_vat_book_both_excel(self, purchase_rows, sale_rows, header_row=3):
         """
         Genera un Excel con 2 hojas: COMPRAS y VENTAS.
-        
+
         Args:
             purchase_rows: Lista de dicts para COMPRAS
             sale_rows: Lista de dicts para VENTAS
             header_row: Fila 1-based donde están los headers
-            
+
         Returns:
             bytes: Contenido del archivo xlsx
         """
         wb = openpyxl.Workbook()
-        
+
         # Hoja COMPRAS
         ws_compras = wb.active
         ws_compras.title = 'COMPRAS'
-        
+
         if header_row > 1:
             ws_compras.cell(row=1, column=1, value='LIBRO DE COMPRAS')
             ws_compras.cell(row=2, column=1, value='Mes AGOSTO 2026')
-        
+
         purchase_headers = [
             'R.I.F.',
             'Nombre o Razon Social',
@@ -168,10 +168,10 @@ class TestImportVatBook(TransactionCase):
             'IVA Retenido (a Terceros)',
             'Anticipo IVA (Importación)',
         ]
-        
+
         for col_idx, header in enumerate(purchase_headers, 1):
             ws_compras.cell(row=header_row, column=col_idx, value=header)
-        
+
         for row_idx, row_data in enumerate(purchase_rows, header_row + 1):
             ws_compras.cell(row=row_idx, column=1, value=row_data.get('partner_vat'))
             ws_compras.cell(row=row_idx, column=2, value=row_data.get('partner_name'))
@@ -190,14 +190,14 @@ class TestImportVatBook(TransactionCase):
             ws_compras.cell(row=row_idx, column=15, value=row_data.get('vat_retained_vendor'))
             ws_compras.cell(row=row_idx, column=16, value=row_data.get('vat_retained_third'))
             ws_compras.cell(row=row_idx, column=17, value=row_data.get('anticipo_import'))
-        
+
         # Hoja VENTAS
         ws_ventas = wb.create_sheet('VENTAS')
-        
+
         if header_row > 1:
             ws_ventas.cell(row=1, column=1, value='LIBRO DE VENTAS')
             ws_ventas.cell(row=2, column=1, value='Mes AGOSTO 2026')
-        
+
         sale_headers = [
             'R.I.F',
             'Nombre o Razon Social',
@@ -213,10 +213,10 @@ class TestImportVatBook(TransactionCase):
             'Nº Comprob. Retención 75% IVA',
             'Iva Retenido (por comprador)',
         ]
-        
+
         for col_idx, header in enumerate(sale_headers, 1):
             ws_ventas.cell(row=header_row, column=col_idx, value=header)
-        
+
         for row_idx, row_data in enumerate(sale_rows, header_row + 1):
             ws_ventas.cell(row=row_idx, column=1, value=row_data.get('partner_vat'))
             ws_ventas.cell(row=row_idx, column=2, value=row_data.get('partner_name'))
@@ -231,7 +231,7 @@ class TestImportVatBook(TransactionCase):
             ws_ventas.cell(row=row_idx, column=11, value=row_data.get('vat_general_contrib'))
             ws_ventas.cell(row=row_idx, column=12, value=row_data.get('retention_number'))
             ws_ventas.cell(row=row_idx, column=13, value=row_data.get('vat_retained_buyer'))
-        
+
         output = BytesIO()
         wb.save(output)
         return output.getvalue()
@@ -272,28 +272,27 @@ class TestImportVatBook(TransactionCase):
     def test_detect_vat_book_sheet(self):
         """Verifica detección de hoja COMPRAS/VENTAS."""
         wizard = self._create_wizard('vat_book_purchase')
-        
+
         # Crear Excel con 2 hojas
         wb = openpyxl.Workbook()
         ws1 = wb.active
         ws1.title = 'COMPRAS'
         ws2 = wb.create_sheet('VENTAS')
-        
+
         output = BytesIO()
         wb.save(output)
         excel_content = output.getvalue()
-        
+
         # Test purchase
-        import base64
         wb_test = openpyxl.load_workbook(BytesIO(excel_content), read_only=True)
         sheet = wizard._detect_vat_book_sheet(wb_test, 'purchase')
         self.assertEqual(sheet, 'COMPRAS')
-        
+
         # Test sale
         wb_test = openpyxl.load_workbook(BytesIO(excel_content), read_only=True)
         sheet = wizard._detect_vat_book_sheet(wb_test, 'sale')
         self.assertEqual(sheet, 'VENTAS')
-        
+
         # Test fallback purchase (hoja 0)
         wb2 = openpyxl.Workbook()
         wb2.active.title = 'Hoja1'
@@ -303,7 +302,7 @@ class TestImportVatBook(TransactionCase):
         wb_test2 = openpyxl.load_workbook(BytesIO(output2.getvalue()), read_only=True)
         sheet = wizard._detect_vat_book_sheet(wb_test2, 'purchase')
         self.assertEqual(sheet, 'Hoja1')
-        
+
         # Test fallback sale (hoja 1)
         wb_test2 = openpyxl.load_workbook(BytesIO(output2.getvalue()), read_only=True)
         sheet = wizard._detect_vat_book_sheet(wb_test2, 'sale')
@@ -312,7 +311,7 @@ class TestImportVatBook(TransactionCase):
     def test_parse_vat_book_headers(self):
         """Verifica detección de fila header y mapeo de columnas."""
         wizard = self._create_wizard('vat_book_purchase')
-        
+
         # Crear Excel con header en fila 7
         rows_data = [
             {
@@ -335,24 +334,24 @@ class TestImportVatBook(TransactionCase):
                 'anticipo_import': 0,
             }
         ]
-        
+
         excel_content = self._create_vat_book_excel(rows_data, book_type='purchase', header_row=7)
         excel_b64 = base64.b64encode(excel_content)
-        
+
         wizard.write({
             'file': excel_b64,
             'filename': 'test_vat_book.xlsx',
         })
-        
+
         # Cargar archivo (esto llama _parse_vat_book_excel internamente)
         wizard.action_load_file()
-        
+
         # Verificar que se detectó la hoja
         self.assertEqual(wizard.sheet_name, 'COMPRAS')
-        
+
         # Verificar que se crearon líneas de preview
         self.assertEqual(len(wizard.line_ids), 1)
-        
+
         # Verificar datos de la línea
         line = wizard.line_ids[0]
         self.assertEqual(line.data['partner_vat'], 'J-31527189-4')
@@ -360,7 +359,7 @@ class TestImportVatBook(TransactionCase):
         self.assertEqual(line.data['invoice_number'], '001')
         self.assertEqual(line.data['base_general'], 1000.0)
         self.assertEqual(line.data['vat_general'], 160.0)
-        
+
         # Verificar period_month detectado
         self.assertEqual(wizard.period_month, '2026-08')
 
@@ -390,7 +389,7 @@ class TestImportVatBook(TransactionCase):
         wizard.write({'file': base64.b64encode(excel), 'filename': 'test.xlsx'})
         wizard.action_load_file()
         wizard.action_import()
-        
+
         lines = self.env['l10n.ve.vat.book.line'].search([
             ('invoice_number', '=', '001'),
             ('period_month', '=', '2026-08'),
@@ -424,7 +423,7 @@ class TestImportVatBook(TransactionCase):
         wizard.write({'file': base64.b64encode(excel), 'filename': 'test.xlsx'})
         wizard.action_load_file()
         wizard.action_import()
-        
+
         lines = self.env['l10n.ve.vat.book.line'].search([
             ('invoice_number', '=', '001-SALE'),
             ('period_month', '=', '2026-08'),
@@ -462,26 +461,26 @@ class TestImportVatBook(TransactionCase):
         wizard.write({'file': base64.b64encode(excel), 'filename': 'test.xlsx'})
         wizard.action_load_file()
         wizard.action_import()
-        
+
         # Deben crearse 2 líneas: una to_vendor, una to_third
         lines = self.env['l10n.ve.vat.book.line'].search([
             ('invoice_number', '=', '002'),
             ('period_month', '=', '2026-08'),
         ])
         self.assertEqual(len(lines), 2, 'Debe crear 2 líneas por split de retención')
-        
+
         # Verificar dirección to_vendor
         line_vendor = lines.filtered(lambda l: l.retention_direction == 'to_vendor')
         self.assertEqual(len(line_vendor), 1)
         self.assertEqual(line_vendor.vat_retained, 100)
         self.assertEqual(line_vendor.operation_code, '33')
-        
+
         # Verificar dirección to_third
         line_third = lines.filtered(lambda l: l.retention_direction == 'to_third')
         self.assertEqual(len(line_third), 1)
         self.assertEqual(line_third.vat_retained, 50)
         self.assertEqual(line_third.operation_code, '33')
-        
+
         # Ambas con mismo operation_code pero distinta direction → no colisionan
         self.assertNotEqual(line_vendor.id, line_third.id)
 
@@ -489,16 +488,16 @@ class TestImportVatBook(TransactionCase):
         """Verifica que Descargar Plantilla funciona para vat_book_purchase."""
         wizard = self._create_wizard('vat_book_purchase')
         result = wizard.action_download_template()
-        
+
         self.assertEqual(result['type'], 'ir.actions.act_url')
         self.assertIn('plantilla_vat_book_purchase.xlsx', result['url'])
         self.assertTrue(wizard.template_file)
-        
+
         import base64
         xlsx = base64.b64decode(wizard.template_file)
         wb = openpyxl.load_workbook(BytesIO(xlsx))
         ws = wb.active
-        
+
         # Verificar headers en la primera fila (plantilla)
         headers = [ws.cell(row=1, column=c).value for c in range(1, ws.max_column + 1)]
         expected = [
@@ -512,7 +511,7 @@ class TestImportVatBook(TransactionCase):
             'Anticipo IVA (Importación)',
         ]
         self.assertEqual(headers, expected)
-        
+
         # Verificar fila de ejemplo (fila 2 existe, vacía)
         self.assertEqual(ws.max_row, 2)
 
@@ -520,16 +519,16 @@ class TestImportVatBook(TransactionCase):
         """Verifica que Descargar Plantilla funciona para vat_book_sale."""
         wizard = self._create_wizard('vat_book_sale')
         result = wizard.action_download_template()
-        
+
         self.assertEqual(result['type'], 'ir.actions.act_url')
         self.assertIn('plantilla_vat_book_sale.xlsx', result['url'])
         self.assertTrue(wizard.template_file)
-        
+
         import base64
         xlsx = base64.b64decode(wizard.template_file)
         wb = openpyxl.load_workbook(BytesIO(xlsx))
         ws = wb.active
-        
+
         headers = [ws.cell(row=1, column=c).value for c in range(1, ws.max_column + 1)]
         expected = [
             'R.I.F.', 'Nombre o Razon Social', 'Tipo Doc', 'Numero de Factura',
@@ -540,14 +539,14 @@ class TestImportVatBook(TransactionCase):
             'Iva Retenido (por comprador)',
         ]
         self.assertEqual(headers, expected)
-        
+
         # Verificar fila de ejemplo (fila 2 existe, vacía)
         self.assertEqual(ws.max_row, 2)
 
     def test_import_vat_book_both_loads_two_sheets(self):
         """vat_book_both carga ambas hojas y marca _book_type en cada línea."""
         wizard = self._create_wizard('vat_book_both')
-        
+
         purchase_rows = [{
             'partner_vat': 'J-31527189-4',
             'partner_name': 'Proveedor Test',
@@ -582,21 +581,21 @@ class TestImportVatBook(TransactionCase):
             'retention_number': '',
             'vat_retained_buyer': 50,
         }]
-        
+
         excel = self._create_vat_book_both_excel(purchase_rows, sale_rows)
         wizard.write({'file': base64.b64encode(excel), 'filename': 'test.xlsx'})
         wizard.action_load_file()
-        
+
         # Verificar que se crearon líneas de ambas hojas
         self.assertTrue(len(wizard.line_ids) >= 2)
-        
+
         # Verificar _book_type
         purchase_lines = wizard.line_ids.filtered(lambda l: l.data.get('_book_type') == 'purchase')
         sale_lines = wizard.line_ids.filtered(lambda l: l.data.get('_book_type') == 'sale')
-        
+
         self.assertTrue(len(purchase_lines) >= 1, 'Debe haber líneas purchase')
         self.assertTrue(len(sale_lines) >= 1, 'Debe haber líneas sale')
-        
+
         # Verificar multi-rate en purchase (base_general + base_no_credit = 2 líneas)
         self.assertEqual(len(purchase_lines), 2)
 
@@ -604,7 +603,7 @@ class TestImportVatBook(TransactionCase):
         """vat_book_both importa creando vat.book.line de ambos tipos."""
         wizard = self._create_wizard('vat_book_both')
         wizard.period_month = '2026-08'
-        
+
         # 1 factura compra con base_general (1 línea)
         # 1 factura compra con base_general + base_no_credit (2 líneas = multi-rate)
         purchase_rows = [
@@ -680,26 +679,26 @@ class TestImportVatBook(TransactionCase):
                 'vat_retained_buyer': 0,
             },
         ]
-        
+
         excel = self._create_vat_book_both_excel(purchase_rows, sale_rows)
         wizard.write({'file': base64.b64encode(excel), 'filename': 'test.xlsx'})
         wizard.action_load_file()
         wizard.action_import()
-        
+
         # Verificar vat.book.line creados
         vbl = self.env['l10n.ve.vat.book.line'].search([
             ('period_month', '=', '2026-08'),
         ])
-        
+
         purchase_vbl = vbl.filtered(lambda l: l.book_type == 'purchase')
         sale_vbl = vbl.filtered(lambda l: l.book_type == 'sale')
-        
+
         # purchase: 2 facturas, una con multi-rate = 3 líneas
         self.assertEqual(len(purchase_vbl), 3, 'Debe crear 3 líneas purchase (2 facturas, 1 multi-rate)')
-        
+
         # sale: 2 facturas = 2 líneas
         self.assertEqual(len(sale_vbl), 2, 'Debe crear 2 líneas sale')
-        
+
         # Verificar operation_codes
         # purchase: general=33, no_credit=30
         self.assertTrue(all(l.operation_code in ('33', '30') for l in purchase_vbl))
@@ -707,13 +706,14 @@ class TestImportVatBook(TransactionCase):
 
     def _compute_expected_totals_from_fixture(self, book_type):
         """Suma los totales del Excel real para validar contra el import.
-        
+
         NOTA: El import combina base_import_16 en base_general y vat_import_16 en vat_general
         (ver _build_vat_book_vals en import_wizard.py). Este helper replica esa lógica
         para que la comparación sea apple-to-apple.
         """
-        import openpyxl
         from pathlib import Path
+
+        import openpyxl
 
         fixture_path = Path(__file__).parent / 'fixtures' / 'Libro_COMPRAS_VENTAS_Ficticio.xlsx'
         wb = openpyxl.load_workbook(fixture_path, data_only=True)
@@ -721,14 +721,14 @@ class TestImportVatBook(TransactionCase):
         if book_type == 'purchase':
             ws = wb['COMPRAS']
             data_start, data_end = 8, 17
-            
+
             base_general = 0.0
             vat_general = 0.0
             base_no_credit = 0.0
             base_import_16 = 0.0
             vat_import_16 = 0.0
             vat_retained_vendor = 0.0
-            
+
             for r in range(data_start, data_end + 1):
                 v = ws.cell(row=r, column=23).value
                 if isinstance(v, (int, float)):
@@ -748,7 +748,7 @@ class TestImportVatBook(TransactionCase):
                 v = ws.cell(row=r, column=29).value
                 if isinstance(v, (int, float)):
                     vat_retained_vendor += v
-            
+
             # Replicar lógica del import: combinar import en general
             return {
                 'base_general': base_general + base_import_16,
@@ -780,18 +780,18 @@ class TestImportVatBook(TransactionCase):
     def test_import_real_fixture_purchase_12_lines(self):
         """Fixture real COMPRAS: 10 facturas + 2 multi-rate = 12 import.line."""
         wizard = self._create_wizard('vat_book_purchase')
-        
+
         fixture_path = Path(__file__).parent / 'fixtures' / 'Libro_COMPRAS_VENTAS_Ficticio.xlsx'
         wizard.write({
             'file': base64.b64encode(fixture_path.read_bytes()),
             'filename': fixture_path.name,
         })
         wizard.action_load_file()
-        
+
         # 10 facturas: 8 normales (1 línea c/u) + 2 con multi-rate (2 líneas c/u) = 12
-        self.assertEqual(len(wizard.line_ids), 12, 
+        self.assertEqual(len(wizard.line_ids), 12,
             f'Esperado 12 import.line, got {len(wizard.line_ids)}')
-        
+
         # Todas deben ser purchase
         for line in wizard.line_ids:
             bt = line.data.get('_book_type')
@@ -800,14 +800,14 @@ class TestImportVatBook(TransactionCase):
     def test_import_real_fixture_sale_9_lines(self):
         """Fixture real VENTAS: 10 facturas - 1 anulada = 9 import.line."""
         wizard = self._create_wizard('vat_book_sale')
-        
+
         fixture_path = Path(__file__).parent / 'fixtures' / 'Libro_COMPRAS_VENTAS_Ficticio.xlsx'
         wizard.write({
             'file': base64.b64encode(fixture_path.read_bytes()),
             'filename': fixture_path.name,
         })
         wizard.action_load_file()
-        
+
         # 10 facturas - 1 anulada = 9
         self.assertEqual(len(wizard.line_ids), 9,
             f'Esperado 9 import.line, got {len(wizard.line_ids)}')
@@ -816,33 +816,33 @@ class TestImportVatBook(TransactionCase):
         """Fixture real BOTH: 12 purchase + 9 sale = 21 import.line → 21 vat.book.line."""
         wizard = self._create_wizard('vat_book_both')
         wizard.period_month = '2026-08'
-        
+
         fixture_path = Path(__file__).parent / 'fixtures' / 'Libro_COMPRAS_VENTAS_Ficticio.xlsx'
         wizard.write({
             'file': base64.b64encode(fixture_path.read_bytes()),
             'filename': fixture_path.name,
         })
         wizard.action_load_file()
-        
+
         # 12 + 9 = 21 import.lines
         self.assertEqual(len(wizard.line_ids), 21,
             f'Esperado 21 import.line, got {len(wizard.line_ids)}')
-        
+
         purchase_lines = wizard.line_ids.filtered(lambda l: l.data.get('_book_type') == 'purchase')
         sale_lines = wizard.line_ids.filtered(lambda l: l.data.get('_book_type') == 'sale')
         self.assertEqual(len(purchase_lines), 12)
         self.assertEqual(len(sale_lines), 9)
-        
+
         # Importar y verificar vat.book.line
         wizard.action_import()
-        
+
         vbl = self.env['l10n.ve.vat.book.line'].search([
             ('period_month', '=', '2026-08'),
         ])
-        
+
         purchase_vbl = vbl.filtered(lambda l: l.book_type == 'purchase')
         sale_vbl = vbl.filtered(lambda l: l.book_type == 'sale')
-        
+
         # 12 purchase + 9 sale = 21
         self.assertEqual(len(purchase_vbl), 12)
         self.assertEqual(len(sale_vbl), 9)
@@ -859,15 +859,15 @@ class TestImportVatBook(TransactionCase):
         })
         wizard.action_load_file()
         wizard.action_import()
-        
+
         vbl = self.env['l10n.ve.vat.book.line'].search([
             ('period_month', '=', '2026-08'),
             ('book_type', '=', 'purchase'),
         ])
-        
+
         total_base = sum(vbl.mapped('base_general'))
         total_vat = sum(vbl.mapped('vat_general'))
-        
+
         # Verificar que re-importar produce los mismos totales (upsert idempotente)
         wizard2 = self._create_wizard('vat_book_purchase')
         wizard2.period_month = '2026-08'
@@ -877,18 +877,18 @@ class TestImportVatBook(TransactionCase):
         })
         wizard2.action_load_file()
         wizard2.action_import()
-        
+
         vbl2 = self.env['l10n.ve.vat.book.line'].search([
             ('period_month', '=', '2026-08'),
             ('book_type', '=', 'purchase'),
         ])
-        
+
         total_base2 = sum(vbl2.mapped('base_general'))
         total_vat2 = sum(vbl2.mapped('vat_general'))
-        
+
         self.assertEqual(total_base, total_base2, 'Re-importar debe dar mismo base_general')
         self.assertEqual(total_vat, total_vat2, 'Re-importar debe dar mismo vat_general')
-        
+
         # Verificar que los totales son positivos y razonables
         self.assertGreater(total_base, 0)
 
@@ -934,7 +934,7 @@ class TestImportVatBook(TransactionCase):
         """Factura anulada VENTAS (fila 17, invoice 000139) NO está en vat.book.line."""
         wizard = self._create_wizard('vat_book_sale')
         wizard.period_month = '2026-08'
-        
+
         fixture_path = Path(__file__).parent / 'fixtures' / 'Libro_COMPRAS_VENTAS_Ficticio.xlsx'
         wizard.write({
             'file': base64.b64encode(fixture_path.read_bytes()),
@@ -942,7 +942,7 @@ class TestImportVatBook(TransactionCase):
         })
         wizard.action_load_file()
         wizard.action_import()
-        
+
         # Verificar que NO existe línea con invoice_number 000139
         anulada = self.env['l10n.ve.vat.book.line'].search([
             ('invoice_number', '=', '000139'),

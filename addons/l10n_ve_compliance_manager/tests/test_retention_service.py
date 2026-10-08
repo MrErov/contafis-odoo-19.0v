@@ -8,7 +8,7 @@ class TestRetentionService(TransactionCase):
     def setUp(self):
         super().setUp()
         self.service = self.env['l10n.ve.retention.service']
-        
+
         # Crear país para tests (Venezuela)
         self.country = self.env['res.country'].search([('code', '=', 'VE')], limit=1)
         if not self.country:
@@ -98,13 +98,13 @@ class TestRetentionService(TransactionCase):
     def _create_out_invoice(self, amount=1000.0):
         sale_account = self._get_sale_account()
         receivable_account = self._get_receivable_account()
-        
+
         # Partner para ventas (cliente) con cuenta por cobrar
         customer = self.env['res.partner'].create({
             'name': 'Cliente Test',
             'property_account_receivable_id': receivable_account.id,
         })
-        
+
         journal = self.env['account.journal'].search([
             ('type', '=', 'sale'),
             ('company_id', '=', self.env.company.id),

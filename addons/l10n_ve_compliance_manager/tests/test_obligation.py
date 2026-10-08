@@ -41,7 +41,7 @@ class TestObligation(TransactionCase):
 
     def _create_obligation(self, client, obligation_type, period=False):
         return self.env['l10n.ve.obligation'].create({
-            'name': 'OBL-TEST-{}'.format(obligation_type.name),
+            'name': f'OBL-TEST-{obligation_type.name}',
             'client_id': client.id,
             'obligation_type_id': obligation_type.id,
             'period': period or '',

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Headers mapping para Libro de Compras/Ventas (Excel real del contador).
 

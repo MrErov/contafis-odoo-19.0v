@@ -1,4 +1,5 @@
 import base64
+
 from odoo import api, fields, models
 from odoo.exceptions import ValidationError
 from odoo.tools import image as image_tools

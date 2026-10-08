@@ -1,8 +1,4 @@
-from odoo import fields
 from odoo.tests import TransactionCase, tagged
-from odoo.exceptions import ValidationError
-from odoo.tools import mute_logger
-import psycopg2
 from psycopg2 import IntegrityError
 
 
@@ -59,7 +55,7 @@ class TestVatBookLine(TransactionCase):
     def test_vat_book_unique_constraint_extended(self):
         """Constraint permite misma factura con distinto operation_code o retention_direction."""
         partner = self.env['res.partner'].create({'name': 'Test', 'vat': 'J-12345678-9'})
-        
+
         # Base: operation_code='33', direction='to_vendor'
         self.env['l10n.ve.vat.book.line'].create({
             'book_type': 'purchase', 'period_month': '2026-08',
@@ -67,7 +63,7 @@ class TestVatBookLine(TransactionCase):
             'control_number': '001', 'operation_code': '33',
             'retention_direction': 'to_vendor', 'company_id': self.env.company.id,
         })
-        
+
         # Distinto operation_code → OK
         self.env['l10n.ve.vat.book.line'].create({
             'book_type': 'purchase', 'period_month': '2026-08',
@@ -75,7 +71,7 @@ class TestVatBookLine(TransactionCase):
             'control_number': '001', 'operation_code': '333',
             'retention_direction': 'to_vendor', 'company_id': self.env.company.id,
         })
-        
+
         # Distinta retention_direction → OK
         self.env['l10n.ve.vat.book.line'].create({
             'book_type': 'purchase', 'period_month': '2026-08',
@@ -83,7 +79,7 @@ class TestVatBookLine(TransactionCase):
             'control_number': '001', 'operation_code': '33',
             'retention_direction': 'to_third', 'company_id': self.env.company.id,
         })
-        
+
         # Duplicado exacto → DEBE fallar con IntegrityError
         with self.assertRaises(IntegrityError):
             self.env['l10n.ve.vat.book.line'].create({

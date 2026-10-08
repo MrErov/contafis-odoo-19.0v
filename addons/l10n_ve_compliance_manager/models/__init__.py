@@ -1,23 +1,25 @@
-from . import compliance_client
-from . import institution
-from . import obligation_type
-from . import obligation
-from . import document_type
-from . import document
-from . import alert
-from . import retention
-from . import retention_service
-from . import import_wizard
-from . import import_mapping
-from . import import_line
-from . import import_log
-from . import account_move
-from . import res_partner
-from . import cartelera_status
-from . import cartelera_evidence
-from . import cartelera_evidence_wizard
-from . import vat_book_line
-from . import vat_book_generate
-from . import vat_book_headers
-from . import vat_return
-from . import vat_book_export_wizard
+from . import (
+    account_move,
+    alert,
+    cartelera_evidence,
+    cartelera_evidence_wizard,
+    cartelera_status,
+    compliance_client,
+    document,
+    document_type,
+    import_line,
+    import_log,
+    import_mapping,
+    import_wizard,
+    institution,
+    obligation,
+    obligation_type,
+    res_partner,
+    retention,
+    retention_service,
+    vat_book_export_wizard,
+    vat_book_generate,
+    vat_book_headers,
+    vat_book_line,
+    vat_return,
+)

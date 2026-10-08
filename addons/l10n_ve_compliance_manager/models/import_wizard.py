@@ -1,6 +1,6 @@
-from io import BytesIO
 import base64
 import json
+from io import BytesIO
 
 from odoo import api, fields, models
 from odoo.exceptions import UserError
@@ -212,7 +212,7 @@ class ImportWizard(models.TransientModel):
     def action_download_template(self):
         """Genera y descarga la plantilla Excel para el tipo seleccionado."""
         self.ensure_one()
-        
+
         if self.import_type == 'vat_book_both':
             xlsx_content = self._generate_vat_book_both_template()
             filename = f'plantilla_{self.import_type}.xlsx'
@@ -226,7 +226,7 @@ class ImportWizard(models.TransientModel):
                        f'&field=template_file&download=true&filename={filename}',
                 'target': 'self',
             }
-        
+
         template_data = self._get_import_templates().get(self.import_type)
         if not template_data:
             return
@@ -245,55 +245,56 @@ class ImportWizard(models.TransientModel):
 
     def _generate_vat_book_both_template(self):
         """Genera plantilla Excel con 2 hojas: COMPRAS y VENTAS."""
-        import openpyxl
-        from openpyxl.styles import Font, PatternFill, Alignment
-        from openpyxl.utils import get_column_letter
         from io import BytesIO
-        
+
+        import openpyxl
+        from openpyxl.styles import Alignment, Font, PatternFill
+        from openpyxl.utils import get_column_letter
+
         wb = openpyxl.Workbook()
-        
+
         # Hoja COMPRAS
         ws_compras = wb.active
         ws_compras.title = 'COMPRAS'
-        
+
         purchase_template = self._get_import_templates()['vat_book_purchase']
         headers = [field[2] for field in purchase_template['fields']]
-        
+
         # Estilo header
         header_font = Font(bold=True, color='FFFFFF')
         header_fill = PatternFill(
             start_color='2C3E50', end_color='2C3E50', fill_type='solid'
         )
         header_align = Alignment(horizontal='center', wrap_text=True)
-        
+
         for col_idx, header in enumerate(headers, 1):
             cell = ws_compras.cell(row=1, column=col_idx, value=header)
             cell.font = header_font
             cell.fill = header_fill
             cell.alignment = header_align
             ws_compras.column_dimensions[get_column_letter(col_idx)].width = 25
-        
+
         # Fila de ejemplo vacía
         for col_idx in range(1, len(headers) + 1):
             ws_compras.cell(row=2, column=col_idx, value='')
-        
+
         # Hoja VENTAS
         ws_ventas = wb.create_sheet('VENTAS')
-        
+
         sale_template = self._get_import_templates()['vat_book_sale']
         headers = [field[2] for field in sale_template['fields']]
-        
+
         for col_idx, header in enumerate(headers, 1):
             cell = ws_ventas.cell(row=1, column=col_idx, value=header)
             cell.font = header_font
             cell.fill = header_fill
             cell.alignment = header_align
             ws_ventas.column_dimensions[get_column_letter(col_idx)].width = 25
-        
+
         # Fila de ejemplo vacía
         for col_idx in range(1, len(headers) + 1):
             ws_ventas.cell(row=2, column=col_idx, value='')
-        
+
         # Guardar en bytes
         output = BytesIO()
         wb.save(output)
@@ -302,7 +303,7 @@ class ImportWizard(models.TransientModel):
     def _generate_template_xlsx(self, template_data):
         """Genera archivo xlsx con headers de la plantilla."""
         import openpyxl
-        from openpyxl.styles import Font, PatternFill, Alignment
+        from openpyxl.styles import Alignment, Font, PatternFill
         from openpyxl.utils import get_column_letter
 
         wb = openpyxl.Workbook()
@@ -340,7 +341,7 @@ class ImportWizard(models.TransientModel):
     def _detect_cartelera_structure(self, ws):
         """
         Detecta dinámicamente la estructura de la hoja de cartelera.
-        
+
         Retorna dict con:
         - header_row: int (1-based)
         - rif_col: int (0-based)
@@ -353,10 +354,10 @@ class ImportWizard(models.TransientModel):
         sample_rows = []
         for row in ws.iter_rows(min_row=1, max_row=5, values_only=True):
             sample_rows.append([str(v).strip() if v else '' for v in row])
-        
+
         if not sample_rows:
             raise UserError(_('La hoja está vacía.'))
-        
+
         # Cargar todos los document_type en orden de código C01..C36
         doc_types = self.env['l10n.ve.document.type'].search([
             ('required_for', '=', 'company')
@@ -366,22 +367,22 @@ class ImportWizard(models.TransientModel):
         expected_codes = [dt.code for dt in doc_types]
         # Set para matching rápido (aunque hay duplicados, el set pierde duplicados)
         name_to_code = {self._normalize(dt.name): dt.code for dt in doc_types}
-        
+
         # 1. ENCONTRAR FILA DE HEADERS: la que más matches tiene con expected_names_norm
         best_row = 1
         best_matches = 0
         for i, row in enumerate(sample_rows):
             if not row:
                 continue
-            matches = sum(1 for cell in row 
+            matches = sum(1 for cell in row
                          if cell and self._normalize(cell) in name_to_code)
             if matches > best_matches:
                 best_matches = matches
                 best_row = i + 1  # 1-based
-        
+
         header_row = best_row
         headers = [str(cell).strip() if cell else '' for cell in sample_rows[header_row - 1]]
-        
+
         # 2. ENCONTRAR COLUMNA RIF
         rif_col = None
         rif_keywords = {'rif', 'r_i_f_', 'r_i_f'}  # normalizado: rif, r.i.f., r.i.f
@@ -390,41 +391,41 @@ class ImportWizard(models.TransientModel):
             if norm in rif_keywords:
                 rif_col = idx
                 break
-        
+
         if rif_col is None:
             # Fallback por mes: enero=Rif en C(2), otros=A(0)
             month_int = int(self.cartelera_month)
             rif_col = 2 if month_int == 1 else 0
-        
+
         # 3. COLUMNA NOMBRE = RIF + 1
         name_col = rif_col + 1
-        
+
         # 4. MAPEAR COLUMNAS DE DOCUMENTOS POR POSICIÓN
         # Detectar el rango de columnas de documentos: después de name_col hasta antes de Total/Porcentaje
         doc_start_col = None
         doc_end_col = None
-        
+
         # Buscar primera columna después de name_col que matchee algún nombre esperado
         for idx in range(name_col + 1, len(headers)):
             norm = self._normalize(headers[idx])
             if norm in name_to_code:
                 doc_start_col = idx
                 break
-        
+
         if doc_start_col is None:
             # Fallback: columna siguiente a name_col
             doc_start_col = name_col + 1
-        
+
         # Buscar columna de Total/Porcentaje
         for idx in range(doc_start_col, len(headers)):
             norm = self._normalize(headers[idx])
             if norm in {'total', 'porcentaje', 'total_porcentaje', 'total%'}:
                 doc_end_col = idx
                 break
-        
+
         if doc_end_col is None:
             doc_end_col = len(headers)
-        
+
         # Asignar códigos por posición: C01, C02, ... en orden
         # Mapeo POSICIONAL C01..C36 (no por nombre).
         # Justificación: hay nombres duplicados entre document_type
@@ -445,7 +446,7 @@ class ImportWizard(models.TransientModel):
                     code_by_col[idx] = name_to_code[norm]
                 elif h:
                     unmatched.append(h)
-        
+
         # Validación defensiva: detectar al menos 30 columnas de documentos
         if len(code_by_col) < 30:
             raise UserError(_(
@@ -453,7 +454,7 @@ class ImportWizard(models.TransientModel):
                 "al menos 30). Verifica que el Excel tenga los 36 headers de "
                 "la cartelera fiscal."
             ) % len(code_by_col))
-        
+
         # También detectar headers no reconocidos FUERA del rango de documentos
         for idx, h in enumerate(headers):
             if idx <= name_col:
@@ -462,10 +463,10 @@ class ImportWizard(models.TransientModel):
                 norm = self._normalize(h)
                 if h and norm not in {'total', 'porcentaje', 'total_porcentaje', 'total%'}:
                     unmatched.append(h)
-        
+
         # 5. PRIMERA FILA DE DATOS = header_row + 1
         data_start_row = header_row + 1
-        
+
         return {
             'header_row': header_row,
             'rif_col': rif_col,
@@ -478,7 +479,7 @@ class ImportWizard(models.TransientModel):
     def _parse_cartelera_excel(self):
         """
         Parsea el Excel de cartelera fiscal para el mes/año seleccionados.
-        
+
         Detecta dinámicamente:
         - Hoja según mes (enero..diciembre)
         - Fila de headers (busca fila con más coincidencias document_type.name)
@@ -486,7 +487,7 @@ class ImportWizard(models.TransientModel):
         - Columna Nombre (RIF + 1)
         - Rango docs (desde primera columna reconocida hasta antes de "Total"/"Porcentaje")
         - Mapeo header → code via document_type (normalizado)
-        
+
         Crea líneas l10n.ve.import.line con data = {
             'rif': rif, 'name': name, 'year': year, 'month': month, 'statuses': {code: bool}
         }
@@ -494,14 +495,15 @@ class ImportWizard(models.TransientModel):
         self.ensure_one()
         if not self.file:
             raise UserError(_('Debe subir un archivo Excel.'))
-        
+
         import base64
-        import openpyxl
         from io import BytesIO
-        
+
+        import openpyxl
+
         file_data = base64.b64decode(self.file)
         wb = openpyxl.load_workbook(BytesIO(file_data), read_only=True, data_only=True)
-        
+
         # Mapear mes a nombre de hoja
         month_names = {
             1: 'enero', 2: 'febrero', 3: 'marzo', 4: 'abril',
@@ -510,60 +512,60 @@ class ImportWizard(models.TransientModel):
         }
         month_int = int(self.cartelera_month)
         sheet_name = month_names.get(month_int)
-        
+
         if sheet_name not in wb.sheetnames:
             raise UserError(_(
                 "La hoja '%s' no existe en el archivo. "
                 "Verifique que el archivo tiene 12 hojas: enero, febrero, ..., diciembre."
             ) % sheet_name)
-        
+
         ws = wb[sheet_name]
-        
+
         # Detectar estructura dinámicamente
         structure = self._detect_cartelera_structure(ws)
-        
+
         # Guardar headers no reconocidos para mostrar en preview
         if structure['unmatched_headers']:
             self.cartelera_unmatched_headers = ', '.join(structure['unmatched_headers'])
         else:
             self.cartelera_unmatched_headers = False
-        
+
         rif_col = structure['rif_col']
         name_col = structure['name_col']
         data_start_row = structure['data_start_row']
         code_by_col = structure['code_by_col']
-        
+
         if not code_by_col:
             raise UserError(_(
                 "No se detectaron columnas de documentos válidas en la hoja '%s'. "
                 "Verifique que los headers coincidan con los tipos de documento configurados."
             ) % sheet_name)
-        
+
         # Límite de seguridad: no iterar más de 500 filas de datos
         max_data_row = min(ws.max_row or 0, data_start_row + 500)
-        
+
         # Leer filas de datos
         row_count = 0
         for row in ws.iter_rows(min_row=data_start_row, max_row=max_data_row, values_only=True):
             if not row:
                 continue
-            
+
             rif = row[rif_col] if rif_col < len(row) else None
             name = row[name_col] if name_col < len(row) else None
-            
+
             # Parar si RIF y nombre están vacíos
             if not rif and not name:
                 break
-            
+
             if not rif:
                 continue  # Saltar filas sin RIF
-            
+
             # Normalizar RIF
             rif_str = str(rif).strip().upper().replace('.', '').replace(' ', '')
             if '-' not in rif_str and len(rif_str) >= 9:
                 # Formato J000000001 -> dejar como viene
                 pass
-            
+
             # Leer statuses por código mapeado
             statuses = {}
             for col_idx, code in code_by_col.items():
@@ -575,7 +577,7 @@ class ImportWizard(models.TransientModel):
                 else:
                     val_str = str(cell_value).strip().lower()
                     statuses[code] = val_str in ('1', 'true', 'verdadero', 'si', 'sí', 'yes', 'x')
-            
+
             # Crear línea de importación
             self.env['l10n.ve.import.line'].create({
                 'wizard_id': self.id,
@@ -590,18 +592,18 @@ class ImportWizard(models.TransientModel):
                 'state': 'draft',
             })
             row_count += 1
-        
+
         if row_count == 0:
             raise UserError(_(
                 "No se encontraron empresas válidas en la hoja '%s'. "
                 "Verifique que la columna RIF y Nombre tengan datos."
             ) % sheet_name)
-        
+
         return row_count
 
     def action_load_file(self):
         """Carga el archivo Excel, lee headers y crea mapeo automático.
-        
+
         Para import_type='cartelera', usa parser específico y salta a preview directamente.
         Para import_type='vat_book_purchase'/'vat_book_sale', usa parser específico VAT book.
         """
@@ -611,11 +613,12 @@ class ImportWizard(models.TransientModel):
 
         if self.import_type == 'cartelera':
             return self._load_cartelera_file()
-        
+
         if self.import_type in ('vat_book_purchase', 'vat_book_sale', 'vat_book_both'):
             return self._load_vat_book_file()
 
         import base64
+
         import openpyxl
         from openpyxl.utils import get_column_letter
 
@@ -685,24 +688,24 @@ class ImportWizard(models.TransientModel):
 
     def _detect_vat_book_sheet(self, workbook, book_type):
         """Detecta la hoja COMPRAS o VENTAS en el workbook.
-        
+
         Args:
             workbook: openpyxl workbook
             book_type: 'purchase' o 'sale'
-            
+
         Returns:
             str: nombre de la hoja detectada
         """
         sheet_names = workbook.sheetnames
         if not sheet_names:
             raise UserError(_('El archivo Excel no tiene hojas.'))
-        
+
         target = 'compras' if book_type == 'purchase' else 'ventas'
         # Buscar case-insensitive
         for name in sheet_names:
             if target in name.lower():
                 return name
-        
+
 # Fallback: hoja 0 para compras, hoja 1 para ventas
         if book_type == 'purchase':
             return sheet_names[0]
@@ -711,13 +714,13 @@ class ImportWizard(models.TransientModel):
 
     def _detect_header_row(self, ws):
         """Detecta la fila que contiene múltiples headers de tabla.
-        
+
         Una fila con 3+ keywords distintos es header real.
         Una fila con 1 keyword (ej: 'R.I.F.:' de la empresa) se descarta.
-        
+
         Args:
             ws: openpyxl worksheet
-            
+
         Returns:
             int: índice 0-based de la fila header, o None si no encuentra
         """
@@ -742,7 +745,6 @@ class ImportWizard(models.TransientModel):
         if not header_str:
             return ''
         import unicodedata
-        import re
         text = str(header_str).strip().lower()
         # Quitar puntos
         text = text.replace('.', '')
@@ -768,10 +770,10 @@ class ImportWizard(models.TransientModel):
 
     def _parse_vat_book_excel(self, ws=None, book_type=None):
         """Parsea el Excel de Libro Compras/Ventas y crea líneas l10n.ve.import.line.
-        
+
         NO importa, solo crea preview (state='draft').
         Multi-rate: si base_general > 0 Y base_reduced > 0 → 2 líneas separadas.
-        
+
         Args:
             ws: worksheet opcional. Si no se pasa, se carga desde self.file
             book_type: 'purchase' o 'sale'. Si no se pasa, deriva de import_type
@@ -779,19 +781,20 @@ class ImportWizard(models.TransientModel):
         self.ensure_one()
         if not self.file and not ws:
             raise UserError(_('Debe subir un archivo Excel.'))
-        
+
         import base64
-        import openpyxl
         from io import BytesIO
-        
+
+        import openpyxl
+
         if ws is None:
             file_data = base64.b64decode(self.file)
             wb = openpyxl.load_workbook(BytesIO(file_data), data_only=True)
-            
+
             # Determinar book_type desde import_type
             if book_type is None:
                 book_type = 'purchase' if self.import_type == 'vat_book_purchase' else 'sale'
-            
+
             # Detectar hoja
             sheet_name = self._detect_vat_book_sheet(wb, book_type)
             self.sheet_name = sheet_name
@@ -799,7 +802,7 @@ class ImportWizard(models.TransientModel):
         else:
             if book_type is None:
                 raise UserError(_('book_type es requerido cuando se pasa ws'))
-        
+
         # Detectar fila header
         header_row_idx = self._detect_header_row(ws)
         if header_row_idx is None:
@@ -807,17 +810,17 @@ class ImportWizard(models.TransientModel):
                 "No se encontró la fila de headers (buscando 'R.I.F.' o 'Factura' "
                 "en las primeras 15 filas)."
             ))
-        
+
         # Parsear headers
         header_map = self._parse_vat_book_headers(ws, header_row_idx)
-        
+
         # Mapear headers a fields
         field_map = {}  # {field_name: col_idx}
         for norm_header, col_idx in header_map.items():
             field_name = self._map_header_to_field(norm_header, book_type)
             if field_name:
                 field_map[field_name] = col_idx
-        
+
         # Detectar period_month en filas anteriores al header (opcional)
         # Solo detectar si no tenemos period_month ya
         if not self.period_month:
@@ -842,26 +845,26 @@ class ImportWizard(models.TransientModel):
                                 break
                 if period_month:
                     break
-            
+
             if period_month:
                 self.period_month = period_month
-        
+
         # Leer filas de datos
         data_start_row = header_row_idx + 2  # 1-based (header_row_idx es 0-based)
         max_data_row = min(ws.max_row or 0, data_start_row + 500)
-        
+
         row_count = 0
         for row_idx in range(data_start_row, max_data_row + 1):
             row = ws[row_idx]
             if not row:
                 continue
-            
+
             # Extraer valores de la fila según field_map
             row_data = {}
             for field_name, col_idx in field_map.items():
                 cell = row[col_idx] if col_idx < len(row) else None
                 value = cell.value if cell else None
-                
+
                 # Convertir números con _parse_number
                 if field_name in ('base_general', 'vat_general', 'base_reduced', 'vat_reduced',
                                   'base_not_subject', 'base_no_credit', 'base_import_16',
@@ -870,9 +873,9 @@ class ImportWizard(models.TransientModel):
                                   'vat_general_non_contrib', 'base_general_contrib',
                                   'vat_general_contrib', 'vat_retained_buyer'):
                     value = self._parse_number(value)
-                
+
                 row_data[field_name] = value
-            
+
             # Saltar filas vacías (sin RIF o sin número factura válido)
             partner_vat = row_data.get('partner_vat')
             inv_raw = str(row_data.get('invoice_number') or '').strip().upper()
@@ -880,15 +883,15 @@ class ImportWizard(models.TransientModel):
                 continue
             if inv_raw in ('', '0', 'NONE', 'BASE IMPONIBLE'):
                 continue
-            
+
             # Saltar filas anuladas
             invoice_num = str(row_data.get('invoice_number') or '').strip().upper()
             if 'ANULADO' in invoice_num:
                 continue
-            
+
             # Multi-rate: crear línea separada por cada tasa con base > 0
             lines_to_create = []
-            
+
             # Determinar qué tasas tienen base > 0
             has_general = (row_data.get('base_general') or 0) > 0
             has_reduced = (row_data.get('base_reduced') or 0) > 0
@@ -898,10 +901,10 @@ class ImportWizard(models.TransientModel):
             has_not_subject = (row_data.get('base_not_subject') or 0) > 0
             has_no_credit = (row_data.get('base_no_credit') or 0) > 0
             has_not_taxed = (row_data.get('base_not_taxed') or 0) > 0
-            
+
             # Para COMPRAS: general, reduced, import, no_subject, no_credit
             # Para VENTAS: contrib, non_contrib, not_subject, not_taxed
-            
+
             if book_type == 'purchase':
                 # Línea para alícuota general (16%) + importación
                 if has_general or has_import:
@@ -909,28 +912,28 @@ class ImportWizard(models.TransientModel):
                     line_data['_rate_type'] = 'general'
                     line_data['_book_type'] = 'purchase'
                     lines_to_create.append(line_data)
-                
+
                 # Línea para alícuota reducida (8%)
                 if has_reduced:
                     line_data = row_data.copy()
                     line_data['_rate_type'] = 'reduced'
                     line_data['_book_type'] = 'purchase'
                     lines_to_create.append(line_data)
-                
+
                 # Línea para no sujetas
                 if has_not_subject:
                     line_data = row_data.copy()
                     line_data['_rate_type'] = 'not_subject'
                     line_data['_book_type'] = 'purchase'
                     lines_to_create.append(line_data)
-                
+
                 # Línea para sin crédito
                 if has_no_credit:
                     line_data = row_data.copy()
                     line_data['_rate_type'] = 'no_credit'
                     line_data['_book_type'] = 'purchase'
                     lines_to_create.append(line_data)
-                    
+
             else:  # sale
                 # Línea para contrib (16%)
                 if has_contrib:
@@ -938,34 +941,34 @@ class ImportWizard(models.TransientModel):
                     line_data['_rate_type'] = 'general'
                     line_data['_book_type'] = 'sale'
                     lines_to_create.append(line_data)
-                
+
                 # Línea para no contrib
                 if has_non_contrib:
                     line_data = row_data.copy()
                     line_data['_rate_type'] = 'non_contrib'
                     line_data['_book_type'] = 'sale'
                     lines_to_create.append(line_data)
-                
+
                 # Línea para no sujetas
                 if has_not_subject:
                     line_data = row_data.copy()
                     line_data['_rate_type'] = 'not_subject'
                     line_data['_book_type'] = 'sale'
                     lines_to_create.append(line_data)
-                
+
                 # Línea para no gravadas
                 if has_not_taxed:
                     line_data = row_data.copy()
                     line_data['_rate_type'] = 'not_taxed'
                     line_data['_book_type'] = 'sale'
                     lines_to_create.append(line_data)
-            
+
             # Si no hay ninguna base > 0, crear una línea genérica
             if not lines_to_create:
                 line_data = row_data.copy()
                 line_data['_book_type'] = book_type
                 lines_to_create = [line_data]
-            
+
             # Crear líneas
             for line_data in lines_to_create:
                 self.env['l10n.ve.import.line'].create({
@@ -975,18 +978,18 @@ class ImportWizard(models.TransientModel):
                     'state': 'draft',
                 })
                 row_count += 1
-        
+
         if row_count == 0:
             raise UserError(_(
                 "No se encontraron datos válidos. "
                 "Verifique que las columnas R.I.F. y Número Factura tengan datos."
             ))
-        
+
         return row_count
 
     def _parse_vat_book_sheet(self, ws, book_type):
         """Parsea una hoja individual (COMPRAS o VENTAS) y crea líneas.
-        
+
         Args:
             ws: worksheet openpyxl
             book_type: 'purchase' o 'sale'
@@ -996,45 +999,46 @@ class ImportWizard(models.TransientModel):
     def _load_vat_book_file(self):
         """Carga archivo Libro Compras/Ventas: parsea directo y va a preview."""
         self.ensure_one()
-        
+
         if self.import_type == 'vat_book_both':
             # Procesar ambas hojas en un solo wizard
             import base64
-            import openpyxl
             from io import BytesIO
-            
+
+            import openpyxl
+
             file_data = base64.b64decode(self.file)
             wb = openpyxl.load_workbook(BytesIO(file_data), read_only=True, data_only=True)
-            
+
             sheet_names = wb.sheetnames
             total_count = 0
-            
+
             # Detectar hoja COMPRAS
             compra_ws = None
             for name in sheet_names:
                 if 'compras' in name.lower():
                     compra_ws = wb[name]
                     break
-            
+
             # Detectar hoja VENTAS
             venta_ws = None
             for name in sheet_names:
                 if 'ventas' in name.lower():
                     venta_ws = wb[name]
                     break
-            
+
             if not compra_ws and not venta_ws:
                 raise UserError(_(
                     "El archivo no contiene hojas 'COMPRAS' ni 'VENTAS'. "
                     "Verifique el nombre de las hojas."
                 ))
-            
+
             if compra_ws:
                 total_count += self._parse_vat_book_sheet(compra_ws, 'purchase')
-            
+
             if venta_ws:
                 total_count += self._parse_vat_book_sheet(venta_ws, 'sale')
-            
+
             if total_count == 0:
                 raise UserError(_(
                     "No se encontraron datos válidos en ninguna hoja. "
@@ -1043,7 +1047,7 @@ class ImportWizard(models.TransientModel):
         else:
             # Comportamiento actual: solo una hoja
             self._parse_vat_book_excel()
-        
+
         self.state = 'preview'
         return {
             'type': 'ir.actions.act_window',
@@ -1071,10 +1075,10 @@ class ImportWizard(models.TransientModel):
     def _build_vat_book_vals(self, data, book_type, partner_id, operation_code, retention_direction):
         """Construye vals para UNA línea vat.book.line según _rate_type."""
         rate = data.get('_rate_type', 'general')
-        
+
         base_general = vat_general = base_reduced = vat_reduced = 0.0
         base_no_credit = base_not_subject = base_not_taxed = 0.0
-        
+
         if book_type == 'purchase':
             if rate == 'general':
                 base_general = (data.get('base_general') or 0) + \
@@ -1100,10 +1104,10 @@ class ImportWizard(models.TransientModel):
                 base_not_subject = data.get('base_not_subject') or 0
             elif rate == 'not_taxed':
                 base_not_taxed = data.get('base_not_taxed') or 0
-        
+
         total_with_vat = (base_general + vat_general + base_reduced + vat_reduced +
                           base_no_credit + base_not_subject + base_not_taxed)
-        
+
         return {
             'book_type': book_type,
             'partner_id': partner_id,
@@ -1127,7 +1131,7 @@ class ImportWizard(models.TransientModel):
         try:
             with self.env.cr.savepoint():
                 data = line.data or {}
-                
+
                 # Skip si RIF vacío o ANULADO
                 partner_vat = data.get('partner_vat')
                 invoice_number = data.get('invoice_number', '')
@@ -1137,7 +1141,7 @@ class ImportWizard(models.TransientModel):
                 if 'ANULADO' in str(invoice_number).upper():
                     line.write({'state': 'skipped', 'error_msg': _('Factura anulada')})
                     return 'skipped'
-                
+
                 # Resolver partner
                 partner = self.env['res.partner'].search([('vat', '=', partner_vat)], limit=1)
                 if not partner:
@@ -1147,7 +1151,7 @@ class ImportWizard(models.TransientModel):
                         'name': data.get('partner_name') or partner_vat,
                         'vat': partner_vat,
                     })
-                
+
                 # Determinar book_type desde _book_type en data (para vat_book_both)
                 # Con fallback seguro para vat_book_purchase / vat_book_sale
                 book_type = data.get('_book_type')
@@ -1161,26 +1165,26 @@ class ImportWizard(models.TransientModel):
                             "Bug del parser: línea sin _book_type en import_type "
                             "'vat_book_both'. Fila: %s"
                         ) % line.row_index)
-                
+
                 rate_type = data.get('_rate_type', 'general')
                 operation_code = self._get_vat_book_operation_code(rate_type, book_type)
                 period_month = self.period_month
                 company_id = self.company_id.id
-                
+
                 # Determinar líneas a crear según retenciones
                 lines_to_create = []
-                
+
                 if book_type == 'purchase':
                     vendor_ret = data.get('vat_retained_vendor', 0) or 0
                     third_ret = data.get('vat_retained_third', 0) or 0
-                    
+
                     if vendor_ret > 0 and third_ret > 0:
                         # 2 líneas separadas (constraint lo permite por distinto retention_direction)
                         base_vals = self._build_vat_book_vals(data, book_type, partner.id, operation_code, 'to_vendor')
                         base_vals['vat_retained'] = vendor_ret
                         base_vals['retention_direction'] = 'to_vendor'
                         lines_to_create.append(base_vals)
-                        
+
                         third_vals = base_vals.copy()
                         third_vals['vat_retained'] = third_ret
                         third_vals['retention_direction'] = 'to_third'
@@ -1204,13 +1208,13 @@ class ImportWizard(models.TransientModel):
                     vals['vat_retained'] = buyer_ret
                     vals['retention_direction'] = 'by_buyer'
                     lines_to_create.append(vals)
-                
+
                 # Upsert cada línea (constraint único incluye 7 campos)
                 records_created = []
                 for vals in lines_to_create:
                     vals['period_month'] = period_month
                     vals['company_id'] = company_id
-                    
+
                     unique_domain = [
                         ('partner_id', '=', partner.id),
                         ('invoice_number', '=', data.get('invoice_number')),
@@ -1222,7 +1226,7 @@ class ImportWizard(models.TransientModel):
                     ]
                     record, action = self._upsert_record('l10n.ve.vat.book.line', vals, unique_domain)
                     records_created.append((record, action))
-                
+
                 # Actualizar línea import (usar el primer record)
                 if records_created:
                     record, action = records_created[0]
@@ -1236,15 +1240,15 @@ class ImportWizard(models.TransientModel):
                 else:
                     line.write({'state': 'skipped', 'error_msg': _('Sin datos para crear línea')})
                     return 'skipped'
-                    
+
         except Exception as e:
             line.write({'state': 'error', 'error_msg': str(e)[:500]})
             return 'error'
 
     def _normalize(self, text):
         """Normaliza texto para comparación (minúsculas, sin espacios, sin acentos, sin HTML)."""
-        import unicodedata
         import re
+        import unicodedata
         if not text:
             return ''
         text = str(text).strip().lower()
@@ -1324,7 +1328,7 @@ class ImportWizard(models.TransientModel):
         """
         Valida RIF venezolano con algoritmo oficial módulo 11 (SENIAT).
         Formato: [JVEGP]-XXXXXXXX-X (9 dígitos + dígito verificador)
-        
+
         Algoritmo oficial SENIAT:
         1. Extraer letra (J/V/E/G/P) y 9 dígitos (8 dígitos + 1 dígito verificador)
         2. Usar pesos fijos para los 8 dígitos principales: [3, 2, 7, 6, 5, 4, 3, 2]
@@ -1333,16 +1337,16 @@ class ImportWizard(models.TransientModel):
            - Si DV = 10 → DV = 0
            - Si DV = 11 → DV = 1
         5. Comparar DV calculado con el 9no dígito (dígito verificador)
-        
+
         La letra (J/V/E/G/P) solo valida el formato, NO afecta el cálculo del DV.
         La letra SÍ está en el RIF pero el algoritmo SENIAT usa solo los 8 dígitos
         para calcular el dígito verificador (la letra es solo clasificatoria).
-        
+
         Ejemplo V-12345678:
         Dígitos: 1,2,3,4,5,6,7,8 | Pesos: 3,2,7,6,5,4,3,2
         Suma = 1*3+2*2+3*7+4*6+5*5+6*4+7*3+8*2 = 138
         138 % 11 = 6 → DV = 11-6 = 5 → V-12345678-5 (válido)
-        
+
         Ejemplo J-31527189:
         Dígitos: 3,1,5,2,7,1,8,9 | Pesos: 3,2,7,6,5,4,3,2
         Suma = 3*3+1*2+5*7+2*6+7*5+1*4+8*3+9*2 = 139
@@ -1395,7 +1399,7 @@ class ImportWizard(models.TransientModel):
 
     def action_preview(self):
         """Genera preview de las primeras N filas.
-        
+
         Para import_type='cartelera', el preview ya se generó en _load_cartelera_file.
         """
         self.ensure_one()
@@ -1418,8 +1422,9 @@ class ImportWizard(models.TransientModel):
             raise UserError(_('Debe subir un archivo Excel.'))
 
         import base64
-        import openpyxl
         from io import BytesIO
+
+        import openpyxl
 
         file_data = base64.b64decode(self.file)
         wb = openpyxl.load_workbook(BytesIO(file_data), read_only=True)
@@ -1553,7 +1558,6 @@ class ImportWizard(models.TransientModel):
         skipped_count = len(self.line_ids.filtered(lambda l: l.state == 'skipped'))
 
         # Obtener records del log desde record_id (Reference field)
-        import json
         records_created = []
         for line in self.line_ids.filtered(lambda l: l.state in ('imported', 'updated')):
             if line.record_id:
@@ -1690,7 +1694,7 @@ class ImportWizard(models.TransientModel):
         """
         if self.import_type == 'cartelera':
             return self._import_cartelera_line(line)
-        
+
         try:
             with self.env.cr.savepoint():
                 # Resolver Many2one según mapping
@@ -1714,10 +1718,10 @@ class ImportWizard(models.TransientModel):
     def _import_cartelera_line(self, line):
         """
         Importa una línea de cartelera fiscal.
-        
+
         Crea/actualiza cliente (res.partner + l10n.ve.compliance.client) por RIF
         y genera snapshot de cartelera via generate_snapshot().
-        
+
         Modo strict: si cliente no existe → error.
         Modo lax: crea cliente si no existe.
         """
@@ -1729,23 +1733,23 @@ class ImportWizard(models.TransientModel):
                 year = data.get('year')
                 month = data.get('month')
                 statuses = data.get('statuses', {})
-                
+
                 if not rif:
                     raise UserError(_('RIF vacío en la fila %d') % line.row_index)
                 if not name:
                     raise UserError(_('Nombre de empresa vacío en la fila %d') % line.row_index)
-                
+
                 # Buscar cliente por RIF
                 client = self.env['l10n.ve.compliance.client'].search([
                     ('rif', '=', rif)
                 ], limit=1)
-                
+
                 if not client:
                     # Buscar partner por VAT (res.partner no tiene campo rif, solo vat)
                     partner = self.env['res.partner'].search([
                         ('vat', '=', rif)
                     ], limit=1)
-                    
+
                     if not partner:
                         if self.mode == 'strict':
                             raise UserError(_(
@@ -1756,17 +1760,17 @@ class ImportWizard(models.TransientModel):
                             'name': name,
                             'vat': rif,
                         })
-                    
+
                     # Asegurar company_id (required en compliance.client)
                     company_id = self.company_id.id or self.env.company.id
-                    
+
                     client = self.env['l10n.ve.compliance.client'].create({
                         'name': name,
                         'partner_id': partner.id,
                         'rif': rif,
                         'company_id': company_id,
                     })
-                
+
                 # Generar snapshot de cartelera
                 cartelera_statuses = self.env['l10n.ve.cartelera.status'].generate_snapshot(
                     client_id=client.id,
@@ -1774,7 +1778,7 @@ class ImportWizard(models.TransientModel):
                     month=month,
                     statuses=statuses,
                 )
-                
+
                 # Actualizar la línea
                 line.write({
                     'state': 'imported',
@@ -1789,13 +1793,12 @@ class ImportWizard(models.TransientModel):
 
     def _create_import_log(self, success_count, error_count, skipped_count, records_created):
         """Crea log persistente de importación."""
-        import json
         import base64
         from io import BytesIO
 
         # Generar log Excel de resultados
         import openpyxl
-        from openpyxl.styles import Font, PatternFill
+        from openpyxl.styles import Font
 
         wb = openpyxl.Workbook()
         ws = wb.active
@@ -1854,4 +1857,3 @@ class ImportWizard(models.TransientModel):
             'view_mode': 'form',
             'target': 'new',
         }
-

@@ -1,8 +1,6 @@
 import re
 
 from odoo import fields, models
-from odoo.exceptions import UserError
-from odoo.tools.translate import _
 
 
 class ImportLine(models.TransientModel):
