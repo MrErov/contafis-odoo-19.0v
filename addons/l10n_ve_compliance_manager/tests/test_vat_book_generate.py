@@ -221,7 +221,7 @@ class TestVatBookGenerate(TransactionCase):
         inv.action_post()
 
         # Crear retención manualmente
-        ret = self.env['l10n.retention'].create({
+        self.env['l10n.retention'].create({
             'partner_id': self.partner.id,
             'amount': 120.0,
             'currency_id': self.company.currency_id.id,

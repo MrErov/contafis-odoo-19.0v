@@ -21,7 +21,7 @@ class TestDocumentTypesCartelera(TransactionCase):
         """36 tipos con códigos C01..C36 exactos."""
         types = self._cartelera_types()
         self.assertEqual(len(types), 36)
-        expected = {'C%02d' % i for i in range(1, 37)}
+        expected = {f'C{i:02d}' for i in range(1, 37)}
         self.assertEqual(set(types.mapped('code')), expected)
 
     def test_codes_unique(self):
@@ -49,9 +49,7 @@ class TestDocumentTypesCartelera(TransactionCase):
             )
             self.assertEqual(
                 len(filtered), count,
-                'Institución %s: esperados %d, encontrados %d' % (
-                    inst_type, count, len(filtered),
-                ),
+                f'Institución {inst_type}: esperados {count}, encontrados {len(filtered)}',
             )
 
     def test_validity_days_correct(self):
@@ -61,13 +59,13 @@ class TestDocumentTypesCartelera(TransactionCase):
         for code in ('C06', 'C07', 'C08', 'C09', 'C10', 'C11'):
             self.assertEqual(
                 by_code[code].validity_days, 30,
-                'Código %s debe tener 30 días' % code,
+                f'Código {code} debe tener 30 días',
             )
         self.assertEqual(by_code['C12'].validity_days, 365)
         for code in ('C05', 'C29', 'C31'):
             self.assertEqual(
                 by_code[code].validity_days, 0,
-                'Código %s debe ser permanente (0)' % code,
+                f'Código {code} debe ser permanente (0)',
             )
 
     def test_mintra_institution_exists(self):

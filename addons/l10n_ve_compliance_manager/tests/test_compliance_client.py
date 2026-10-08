@@ -52,7 +52,7 @@ class TestComplianceClient(TransactionCase):
         self.assertIn('Sin datos para el mes actual', html)
 
         # CASO 2: Con statuses validos -> contiene badges
-        status = self.Status.create({
+        self.Status.create({
             'client_id': self.client.id,
             'document_type_id': self.type_c01.id,
             'year': year,

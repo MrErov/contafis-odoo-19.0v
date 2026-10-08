@@ -232,7 +232,7 @@ class TestVatReturn(TransactionCase):
         out_inv.action_post()
 
         # Crear retención en venta (simular que el cliente nos retiene)
-        ret = self.env['l10n.retention'].create({
+        self.env['l10n.retention'].create({
             'partner_id': self.customer.id,
             'amount': 240.0,  # 75% de 320
             'currency_id': self.company.currency_id.id,

@@ -277,7 +277,7 @@ class TestImportVatBook(TransactionCase):
         wb = openpyxl.Workbook()
         ws1 = wb.active
         ws1.title = 'COMPRAS'
-        ws2 = wb.create_sheet('VENTAS')
+        wb.create_sheet('VENTAS')
 
         output = BytesIO()
         wb.save(output)

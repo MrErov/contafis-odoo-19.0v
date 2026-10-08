@@ -54,7 +54,6 @@ class ImportLine(models.TransientModel):
             return False
 
         errors = []
-        data = self.data or {}
 
         # Obtener mapeos del wizard
         mappings = wizard.mapping_ids.filtered(lambda m: m.field_name)
@@ -124,7 +123,6 @@ class ImportLine(models.TransientModel):
             return False
 
         errors = []
-        data = self.data or {}
         mappings = wizard.mapping_ids.filtered(lambda m: m.field_name and m.field_type == 'many2one')
 
         for m in mappings:
@@ -206,7 +204,7 @@ class ImportLine(models.TransientModel):
 
         errors = []
         data = self.data or {}
-        model_name = self.model_name or ''
+
         # Obtener el tipo de importación del wizard
         import_type = wizard.import_type if wizard else False
 

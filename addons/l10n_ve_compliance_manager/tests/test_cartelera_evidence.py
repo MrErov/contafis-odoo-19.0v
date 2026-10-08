@@ -1,4 +1,5 @@
 import base64
+import importlib.util
 import io
 
 from dateutil.relativedelta import relativedelta
@@ -6,11 +7,7 @@ from odoo import fields
 from odoo.exceptions import ValidationError
 from odoo.tests import TransactionCase, tagged
 
-try:
-    from PIL import Image as PILImage
-    HAS_PIL = True
-except ImportError:
-    HAS_PIL = False
+HAS_PIL = importlib.util.find_spec('PIL') is not None
 
 
 @tagged('post_install', '-at_install')

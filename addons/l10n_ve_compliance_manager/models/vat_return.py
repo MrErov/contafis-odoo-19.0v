@@ -273,10 +273,6 @@ class VatReturn(models.Model):
         section_fill = PatternFill(
             start_color='E8E8E8', end_color='E8E8E8', fill_type='solid'
         )
-        total_font = Font(bold=True)
-        total_fill = PatternFill(
-            start_color='D9E2F3', end_color='D9E2F3', fill_type='solid'
-        )
         thin_border = Border(
             left=Side(style='thin'),
             right=Side(style='thin'),

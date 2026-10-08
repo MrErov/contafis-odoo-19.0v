@@ -222,7 +222,7 @@ class TestVatBookExport(TransactionCase):
             'company_id': self.company.id,
             'book_type': 'purchase',
         })
-        result = wizard.action_export_xlsx()
+        wizard.action_export_xlsx()
 
         xlsx = base64.b64decode(wizard.template_file)
         wb, ws = self._read_xlsx(xlsx)
@@ -241,7 +241,7 @@ class TestVatBookExport(TransactionCase):
             'company_id': self.company.id,
             'book_type': 'purchase',
         })
-        result = wizard.action_export_xlsx()
+        wizard.action_export_xlsx()
         xlsx = base64.b64decode(wizard.template_file)
         wb, ws = self._read_xlsx(xlsx)
 
@@ -266,7 +266,7 @@ class TestVatBookExport(TransactionCase):
             'company_id': self.company.id,
             'book_type': 'sale',
         })
-        result = wizard.action_export_xlsx()
+        wizard.action_export_xlsx()
         xlsx = base64.b64decode(wizard.template_file)
         wb, ws = self._read_xlsx(xlsx)
 
@@ -334,7 +334,7 @@ class TestVatBookExport(TransactionCase):
             'company_id': self.company.id,
             'book_type': 'purchase',
         })
-        result = wizard.action_export_xlsx()
+        wizard.action_export_xlsx()
         xlsx = base64.b64decode(wizard.template_file)
         wb, ws = self._read_xlsx(xlsx)
 

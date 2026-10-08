@@ -362,8 +362,6 @@ class ImportWizard(models.TransientModel):
         doc_types = self.env['l10n.ve.document.type'].search([
             ('required_for', '=', 'company')
         ], order='code')
-        # Lista de nombres normalizados en orden de código (para matching posicional)
-        expected_names_norm = [self._normalize(dt.name) for dt in doc_types]
         expected_codes = [dt.code for dt in doc_types]
         # Set para matching rápido (aunque hay duplicados, el set pierde duplicados)
         name_to_code = {self._normalize(dt.name): dt.code for dt in doc_types}
@@ -674,7 +672,7 @@ class ImportWizard(models.TransientModel):
     def _load_cartelera_file(self):
         """Carga archivo cartelera: parsea directo y va a preview (sin paso mapping)."""
         self.ensure_one()
-        row_count = self._parse_cartelera_excel()
+        self._parse_cartelera_excel()
         self.state = 'preview'
         return {
             'type': 'ir.actions.act_window',
@@ -1499,7 +1497,6 @@ class ImportWizard(models.TransientModel):
     def _validate_line(self, line):
         """Valida una línea según 3 niveles. Retorna lista de errores."""
         errors = []
-        data = line.data or {}
 
         # Nivel 1: Sintaxis
         # TODO: implementar validaciones sintácticas
@@ -1772,7 +1769,7 @@ class ImportWizard(models.TransientModel):
                     })
 
                 # Generar snapshot de cartelera
-                cartelera_statuses = self.env['l10n.ve.cartelera.status'].generate_snapshot(
+                self.env['l10n.ve.cartelera.status'].generate_snapshot(
                     client_id=client.id,
                     year=year,
                     month=month,

@@ -30,7 +30,6 @@ class L10nVeRetentionService(models.AbstractModel):
             return {}
         islr_rate = self.get_rate('islr')
         iva_rate = self.get_rate('iva')
-        igtf_rate = self.get_rate('igtf')
         return {
             'islr': move.amount_untaxed * islr_rate / 100.0 if islr_rate else 0.0,
             'iva': move.amount_tax * iva_rate / 100.0 if iva_rate and move.amount_tax else 0.0,
