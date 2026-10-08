@@ -3,16 +3,94 @@
         <field name="name">l10n.ve.vat.return.list</field>
         <field name="model">l10n.ve.vat.return</field>
         <field name="arch" type="xml">
-            <list string="Planilla IVA 99030" multi_edit="1">
+            <list string="Planilla IVA 99030" multi_edit="0"
+                  decoration-info="state == 'loaded'"
+                  decoration-success="state == 'calculated'"
+                  decoration-muted="state == 'draft'"
+                  decoration-danger="item_53 > 0">
+                <field name="period_month" string="Per&#237;odo"/>
+                <field name="company_id" groups="base.group_multi_company" string="Empresa"/>
+                <field name="state" widget="badge"
+                       decoration-muted="state == 'draft'"
+                       decoration-info="state == 'loaded'"
+                       decoration-success="state == 'calculated'"/>
+                <field name="item_49" string="Total D&#233;bitos"
+                       widget="float"/>
+                <field name="item_39" string="Total Cr&#233;ditos"
+                       widget="float"/>
+                <field name="item_60" string="Excedente Mes Sig."
+                       widget="float"/>
+                <field name="item_53" string="Total a Pagar"
+                       widget="float"/>
+                <field name="item_20" string="Arrastre Ant." optional="hide"
+                       widget="float"/>
+                <field name="item_66" string="Retenciones" optional="hide"
+                       widget="float"/>
+                <field name="item_54" string="Multas" optional="hide"
+                       widget="float"/>
+                <field name="item_48" string="Ajuste D&#233;bitos" optional="hide"
+                       widget="float"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_l10n_ve_vat_return_kanban" model="ir.ui.view">
+        <field name="name">l10n.ve.vat.return.kanban</field>
+        <field name="model">l10n.ve.vat.return</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="state" class="o_kanban_mobile">
                 <field name="period_month"/>
-                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="company_id"/>
+                <field name="state"/>
                 <field name="item_49"/>
                 <field name="item_39"/>
                 <field name="item_60"/>
                 <field name="item_53"/>
-                <field name="item_20"/>
-                <field name="item_66"/>
-            </list>
+                <templates>
+                    <t t-name="card">
+                        <div class="oe_kanban_card oe_kanban_global_click">
+                            <div class="oe_kanban_content">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <strong><field name="period_month"/></strong>
+                                    <field name="state" widget="badge"
+                                           decoration-muted="state == 'draft'"
+                                           decoration-info="state == 'loaded'"
+                                           decoration-success="state == 'calculated'"/>
+                                </div>
+                                <div class="text-muted small"><field name="company_id"/></div>
+                                <hr class="my-2"/>
+                                <div class="row text-center small">
+                                    <div class="col-6">
+                                        <div class="text-muted">D&#233;bitos</div>
+                                        <div class="fw-bold"><field name="item_49" widget="float"/></div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="text-muted">Cr&#233;ditos</div>
+                                        <div class="fw-bold"><field name="item_39" widget="float"/></div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="text-muted">Excedente</div>
+                                        <div class="fw-bold text-success"><field name="item_60" widget="float"/></div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="text-muted">A Pagar</div>
+                                        <div class="fw-bold text-danger"><field name="item_53" widget="float"/></div>
+                                    </div>
+                                </div>
+                                <hr class="my-2"/>
+                                <div class="d-flex gap-2">
+                                    <button name="action_load_from_book" type="object" class="btn btn-sm btn-primary flex-fill">
+                                        Cargar Libro
+                                    </button>
+                                    <button name="action_open_book_lines" type="object" class="btn btn-sm btn-outline-secondary flex-fill">
+                                        Ver Libro
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
         </field>
     </record>
 
@@ -35,6 +113,26 @@
                             <field name="company_id" groups="base.group_multi_company"/>
                         </group>
                     </group>
+                    <div class="row mb-3 p-3 bg-light rounded">
+                        <div class="col-3 text-center">
+                            <div class="text-muted small">Total D&#233;bitos</div>
+                            <field name="item_49" readonly="1" class="fw-bold fs-4"/>
+                        </div>
+                        <div class="col-3 text-center">
+                            <div class="text-muted small">Total Cr&#233;ditos</div>
+                            <field name="item_39" readonly="1" class="fw-bold fs-4"/>
+                        </div>
+                        <div class="col-3 text-center">
+                            <div class="text-muted small">Excedente Mes Sig.</div>
+                            <field name="item_60" readonly="1" class="fw-bold fs-4 text-success"
+                                   help="max(0, item_39 - item_49). Si > 0 arrastra a item_20 del mes siguiente."/>
+                        </div>
+                        <div class="col-3 text-center">
+                            <div class="text-muted small">Total a Pagar</div>
+                            <field name="item_53" readonly="1" class="fw-bold fs-4 text-danger"
+                                   help="abs(min(0, item_39 - item_49)). Solo se paga si item_39 &lt; item_49."/>
+                        </div>
+                    </div>
                     <notebook>
                         <page string="Débitos (Items 40-49)">
                             <group>
@@ -135,15 +233,37 @@
         </field>
     </record>
 
-    <record id="view_l10n_ve_vat_return_search" model="ir.ui.view">
+<record id="view_l10n_ve_vat_return_search" model="ir.ui.view">
         <field name="name">l10n.ve.vat.return.search</field>
         <field name="model">l10n.ve.vat.return</field>
         <field name="arch" type="xml">
             <search string="Planilla IVA 99030">
-                <field name="period_month"/>
+                <field name="period_month" string="Per&#237;odo"
+                       filter_domain="[('period_month', 'ilike', self)]"/>
                 <field name="company_id" groups="base.group_multi_company"/>
-                <filter string="Agrupar por Período" name="groupby_period" context="{'group_by': 'period_month'}"/>
-                <filter string="Agrupar por Compañía" name="groupby_company" context="{'group_by': 'company_id'}"/>
+
+                <filter string="Borrador" name="filter_draft"
+                        domain="[('state', '=', 'draft')]"/>
+                <filter string="Cargado" name="filter_loaded"
+                        domain="[('state', '=', 'loaded')]"/>
+                <filter string="Calculado" name="filter_calculated"
+                        domain="[('state', '=', 'calculated')]"/>
+
+                <separator/>
+
+                <filter string="A Pagar" name="filter_to_pay"
+                        domain="[('item_53', '>', 0)]"/>
+                <filter string="Con Excedente" name="filter_excedente"
+                        domain="[('item_60', '>', 0)]"/>
+
+                <separator/>
+
+                <filter string="Agrupar por Empresa" name="groupby_company"
+                        context="{'group_by': 'company_id'}"/>
+                <filter string="Agrupar por Per&#237;odo" name="groupby_period"
+                        context="{'group_by': 'period_month'}"/>
+                <filter string="Agrupar por Estado" name="groupby_state"
+                        context="{'group_by': 'state'}"/>
             </search>
         </field>
     </record>
@@ -151,7 +271,7 @@
     <record id="action_l10n_ve_vat_return" model="ir.actions.act_window">
         <field name="name">Planilla IVA 99030</field>
         <field name="res_model">l10n.ve.vat.return</field>
-        <field name="view_mode">list,form</field>
+        <field name="view_mode">list,form,kanban</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
                 Cree su primera Planilla IVA 99030
