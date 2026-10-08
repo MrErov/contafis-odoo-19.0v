@@ -25,6 +25,7 @@
                     <button name="action_load_from_book" string="Cargar desde Libro" type="object" class="btn-primary"/>
                     <button name="action_calculate" string="Calcular" type="object" class="btn-primary"/>
                     <button name="action_open_book_lines" string="Ver Líneas Libro" type="object" class="btn-secondary"/>
+                    <button name="action_export_99030_xlsx" string="Exportar a Excel" type="object" class="btn-secondary"/>
                     <field name="state" widget="statusbar" invisible="1"/>
                 </header>
                 <sheet>

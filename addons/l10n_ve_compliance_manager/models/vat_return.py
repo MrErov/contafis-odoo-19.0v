@@ -1,6 +1,12 @@
+from io import BytesIO
+import base64
+
 from odoo import api, fields, models
 from odoo.exceptions import UserError
 from odoo.tools.translate import _
+
+from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+from openpyxl.utils import get_column_letter
 
 
 class VatReturn(models.Model):
@@ -93,6 +99,10 @@ class VatReturn(models.Model):
     item_58 = fields.Float(string='Item 58 - Total ajustes', digits='Account', default=0.0)
     item_69 = fields.Float(string='Item 69 - Saldo final', digits='Account', default=0.0)
     item_90 = fields.Float(string='Item 90 - Observaciones', digits='Account', default=0.0)
+
+    # Export fields
+    export_file = fields.Binary(string='Archivo Excel Exportado', readonly=True)
+    export_filename = fields.Char(string='Nombre Archivo Exportado', readonly=True)
 
     _sql_constraints = [
         ('unique_return', 'UNIQUE(company_id, period_month)',
@@ -245,4 +255,180 @@ class VatReturn(models.Model):
                 ('period_month', '=', self.period_month),
                 ('company_id', '=', self.company_id.id),
             ],
+        }
+
+    def action_export_99030_xlsx(self):
+        """Exporta la Planilla IVA 99030 a Excel con los 48 ítems SENIAT."""
+        self.ensure_one()
+
+        import openpyxl
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = 'PLANILLA 99030'
+
+        # Estilos
+        header_font = Font(bold=True, color='FFFFFF')
+        header_fill = PatternFill(
+            start_color='2C3E50', end_color='2C3E50', fill_type='solid'
+        )
+        header_align = Alignment(horizontal='center', wrap_text=True)
+        section_font = Font(bold=True)
+        section_fill = PatternFill(
+            start_color='E8E8E8', end_color='E8E8E8', fill_type='solid'
+        )
+        total_font = Font(bold=True)
+        total_fill = PatternFill(
+            start_color='D9E2F3', end_color='D9E2F3', fill_type='solid'
+        )
+        thin_border = Border(
+            left=Side(style='thin'),
+            right=Side(style='thin'),
+            top=Side(style='thin'),
+            bottom=Side(style='thin'),
+        )
+        number_format = '#,##0.00'
+
+        # Ajustar anchos de columna
+        ws.column_dimensions['A'].width = 8
+        ws.column_dimensions['B'].width = 60
+        ws.column_dimensions['C'].width = 20
+
+        row_idx = 1
+
+        # Encabezado empresa
+        ws.cell(row=row_idx, column=1, value='FORMA IVA 99030').font = Font(bold=True, size=14)
+        ws.merge_cells(start_row=row_idx, start_column=1, end_row=row_idx, end_column=3)
+        row_idx += 1
+
+        ws.cell(row=row_idx, column=1, value='RIF:')
+        ws.cell(row=row_idx, column=2, value=self.company_id.vat or '')
+        row_idx += 1
+
+        ws.cell(row=row_idx, column=1, value='Contribuyente:')
+        ws.cell(row=row_idx, column=2, value=self.company_id.name or '')
+        row_idx += 1
+
+        ws.cell(row=row_idx, column=1, value='Período:')
+        ws.cell(row=row_idx, column=2, value=self.period_month)
+        row_idx += 2  # Fila en blanco
+
+        # Definir todos los 48 ítems según tabla SENIAT
+        items = [
+            # DÉBITOS FISCALES (13)
+            ('DÉBITOS FISCALES', None, None, True),
+            ('40', 'Ventas internas no gravadas', 'item_40', False),
+            ('41', 'Ventas de exportación', 'item_41', False),
+            ('42', 'Ventas internas gravadas por alícuota general 16%', 'item_42', False),
+            ('43', 'IVA ventas 16%', 'item_43', False),
+            ('442', 'Ventas internas gravadas por alícuota general + adicional', 'item_442', False),
+            ('443', 'Ventas internas gravadas por alícuota reducida', 'item_443', False),
+            ('452', 'IVA adicional ventas', 'item_452', False),
+            ('453', 'IVA reducido ventas', 'item_453', False),
+            ('46', 'Total ventas y débitos fiscales para efectos de determinación', 'item_46', False),
+            ('47', 'Total IVA ventas', 'item_47', False),
+            ('48', 'Ajuste a los débitos fiscales de períodos anteriores', 'item_48', False),
+            ('80', 'Ajuste por prorrata', 'item_80', False),
+            ('49', 'Total débitos fiscales', 'item_49', False),
+            # CRÉDITOS FISCALES (24)
+            ('CRÉDITOS FISCALES', None, None, True),
+            ('30', 'Compras no gravadas y/o sin derecho a crédito fiscal', 'item_30', False),
+            ('31', 'Importación gravadas por alícuota general', 'item_31', False),
+            ('32', 'IVA importación 16%', 'item_32', False),
+            ('312', 'Importación gravadas por alícuota general + adicional', 'item_312', False),
+            ('313', 'Importación gravadas por alícuota reducida', 'item_313', False),
+            ('322', 'IVA importación adicional', 'item_322', False),
+            ('323', 'IVA importación reducida', 'item_323', False),
+            ('33', 'Compras internas gravadas solo por alícuota general 16%', 'item_33', False),
+            ('34', 'IVA compras 16%', 'item_34', False),
+            ('332', 'Compras internas gravadas por alícuota general + adicional', 'item_332', False),
+            ('333', 'Compras internas gravadas por alícuota reducida', 'item_333', False),
+            ('342', 'IVA adicional compras', 'item_342', False),
+            ('343', 'IVA reducido compras', 'item_343', False),
+            ('35', 'Total compras y créditos fiscales del período', 'item_35', False),
+            ('36', 'Total IVA compras', 'item_36', False),
+            ('70', 'Créditos fiscales deducibles', 'item_70', False),
+            ('37', 'Créditos fiscales producto del porcentaje de prorrata', 'item_37', False),
+            ('71', 'Total créditos fiscales deducibles', 'item_71', False),
+            ('20', 'Excedente créditos fiscales del mes anterior', 'item_20', False),
+            ('21', 'Reintegro solicitado (solo exportadores)', 'item_21', False),
+            ('81', 'Reintegro solicitado (entes exonerados)', 'item_81', False),
+            ('38', 'Ajuste a los créditos fiscales de períodos anteriores', 'item_38', False),
+            ('82', 'Certificados de débitos fiscales exonerados registrados en el período', 'item_82', False),
+            ('39', 'Total créditos fiscales', 'item_39', False),
+            # AUTOLIQUIDACIÓN (22)
+            ('AUTOLIQUIDACIÓN', None, None, True),
+            ('53', 'TOTAL IMPUESTO DEL PERÍODO', 'item_53', False),
+            ('60', 'Excedente crédito fiscal para el mes siguiente', 'item_60', False),
+            ('22', 'Impuesto pagado en declaración(es) sustituida(s)', 'item_22', False),
+            ('51', 'Retenciones descontadas en declaración(es) sustituida(s)', 'item_51', False),
+            ('24', 'Percepciones descontadas en declaración(es) sustituida(s)', 'item_24', False),
+            ('78', 'Sub-total de impuesto a pagar', 'item_78', False),
+            ('54', 'Retenciones acumuladas por descontar', 'item_54', False),
+            ('66', 'Retenciones del período', 'item_66', False),
+            ('72', 'Créditos adquiridos por cesión de retenciones', 'item_72', False),
+            ('73', 'Recuperación de retenciones solicitado', 'item_73', False),
+            ('74', 'Total retenciones', 'item_74', False),
+            ('55', 'Retenciones soportadas y descontadas', 'item_55', False),
+            ('67', 'Saldo de retenciones de IVA no aplicado', 'item_67', False),
+            ('56', 'Sub-total impuesto a pagar', 'item_56', False),
+            ('57', 'Percepciones en importaciones pendientes por descontar', 'item_57', False),
+            ('68', 'Percepciones del período', 'item_68', False),
+            ('75', 'Créditos adquiridos por cesión de retenciones (percepciones)', 'item_75', False),
+            ('76', 'Recuperación de percepciones solicitado', 'item_76', False),
+            ('77', 'Total percepciones', 'item_77', False),
+            ('58', 'Percepciones en aduanas descontadas', 'item_58', False),
+            ('69', 'Saldo de percepciones en aduana no aplicado', 'item_69', False),
+            ('90', 'Total a Pagar', 'item_90', False),
+        ]
+
+        # Escribir headers
+        for col_idx, header in enumerate(['Ítem', 'Concepto', 'Valor'], 1):
+            cell = ws.cell(row=row_idx, column=col_idx, value=header)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = header_align
+            cell.border = thin_border
+        row_idx += 1
+
+        # Escribir items
+        for item_code, concept, field_name, is_section in items:
+            if is_section:
+                # Sección (DÉBITOS, CRÉDITOS, AUTOLIQUIDACIÓN)
+                ws.cell(row=row_idx, column=1, value=item_code).font = section_font
+                ws.cell(row=row_idx, column=1).fill = section_fill
+                ws.cell(row=row_idx, column=1).border = thin_border
+                ws.cell(row=row_idx, column=2, value='').fill = section_fill
+                ws.cell(row=row_idx, column=2).border = thin_border
+                ws.cell(row=row_idx, column=3, value='').fill = section_fill
+                ws.cell(row=row_idx, column=3).border = thin_border
+            else:
+                # Ítem normal
+                value = getattr(self, field_name, 0.0) or 0.0
+                ws.cell(row=row_idx, column=1, value=item_code).border = thin_border
+                ws.cell(row=row_idx, column=1).alignment = Alignment(horizontal='center')
+                ws.cell(row=row_idx, column=2, value=concept).border = thin_border
+                cell_val = ws.cell(row=row_idx, column=3, value=value)
+                cell_val.number_format = number_format
+                cell_val.border = thin_border
+                cell_val.alignment = Alignment(horizontal='right')
+            row_idx += 1
+
+        # Guardar en bytes
+        output = BytesIO()
+        wb.save(output)
+        xlsx_content = output.getvalue()
+
+        # Guardar en campos Binary
+        filename = f'Planilla_99030_{self.period_month}.xlsx'
+        self.write({
+            'export_file': base64.b64encode(xlsx_content),
+            'export_filename': filename,
+        })
+
+        return {
+            'type': 'ir.actions.act_url',
+            'url': f'/web/content/?model=l10n.ve.vat.return&id={self.id}'
+                   f'&field=export_file&download=true&filename={filename}',
+            'target': 'self',
         }

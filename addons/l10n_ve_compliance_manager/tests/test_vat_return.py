@@ -3,6 +3,9 @@ from odoo.tests import TransactionCase, tagged
 from odoo.exceptions import UserError, ValidationError
 from odoo.tools import mute_logger
 import psycopg2
+import base64
+import openpyxl
+from io import BytesIO
 
 
 @tagged('post_install', '-at_install')
@@ -272,3 +275,107 @@ class TestVatReturn(TransactionCase):
 
         # Debe recalcular item_49 = item_47 + item_48 - item_80
         self.assertEqual(vat_return.item_49, vat_return.item_47 + 50.0)
+
+    def test_export_99030_generates_file(self):
+        """Exporta la Planilla 99030 a Excel y verifica valores."""
+        # Crear planilla con valores conocidos
+        vat_return = self.env['l10n.ve.vat.return'].create({
+            'period_month': '2026-08',
+            'company_id': self.company.id,
+            'item_42': 1000.0,
+            'item_43': 160.0,
+            'item_33': 500.0,
+            'item_34': 80.0,
+            'item_53': 80.0,
+            'item_60': 0.0,
+            'item_90': 80.0,
+        })
+        result = vat_return.action_export_99030_xlsx()
+
+        self.assertEqual(result['type'], 'ir.actions.act_url')
+        self.assertIn('Planilla_99030_2026-08.xlsx', result['url'])
+        self.assertTrue(vat_return.export_file)
+        self.assertEqual(vat_return.export_filename, 'Planilla_99030_2026-08.xlsx')
+
+        # Verificar contenido del XLSX
+        xlsx = base64.b64decode(vat_return.export_file)
+        wb = openpyxl.load_workbook(BytesIO(xlsx), data_only=True)
+        ws = wb.active
+
+        self.assertEqual(ws.title, 'PLANILLA 99030')
+
+        # Verificar encabezado empresa
+        self.assertEqual(ws.cell(row=1, column=1).value, 'FORMA IVA 99030')
+        self.assertEqual(ws.cell(row=2, column=1).value, 'RIF:')
+        self.assertEqual(ws.cell(row=3, column=1).value, 'Contribuyente:')
+        self.assertEqual(ws.cell(row=4, column=1).value, 'Período:')
+
+        # Verificar headers de tabla (fila 6)
+        headers = [ws.cell(row=6, column=c).value for c in range(1, 4)]
+        self.assertEqual(headers, ['Ítem', 'Concepto', 'Valor'])
+
+        # Helper para buscar un ítem por código
+        def find_item_row(item_code):
+            for r in range(7, ws.max_row + 1):
+                if ws.cell(row=r, column=1).value == item_code:
+                    return r
+            return None
+
+        # Verificar item_42
+        row_42 = find_item_row('42')
+        self.assertIsNotNone(row_42, 'item_42 no encontrado')
+        self.assertEqual(ws.cell(row=row_42, column=2).value, 'Ventas internas gravadas por alícuota general 16%')
+        self.assertEqual(ws.cell(row=row_42, column=3).value, 1000.0)
+
+        # Verificar item_43
+        row_43 = find_item_row('43')
+        self.assertIsNotNone(row_43, 'item_43 no encontrado')
+        self.assertEqual(ws.cell(row=row_43, column=3).value, 160.0)
+
+        # Verificar item_33 (en créditos)
+        row_33 = find_item_row('33')
+        self.assertIsNotNone(row_33, 'item_33 no encontrado')
+        self.assertEqual(ws.cell(row=row_33, column=2).value, 'Compras internas gravadas solo por alícuota general 16%')
+        self.assertEqual(ws.cell(row=row_33, column=3).value, 500.0)
+
+        # Verificar item_90 (Total a Pagar)
+        row_90 = find_item_row('90')
+        self.assertIsNotNone(row_90, 'item_90 no encontrado')
+        self.assertEqual(ws.cell(row=row_90, column=2).value, 'Total a Pagar')
+        self.assertEqual(ws.cell(row=row_90, column=3).value, 80.0)
+
+    def test_export_99030_headers_structure(self):
+        """Verifica que el XLSX tiene las 3 secciones y 48 ítems."""
+        vat_return = self.env['l10n.ve.vat.return'].create({
+            'period_month': '2026-08',
+            'company_id': self.company.id,
+        })
+        vat_return.action_export_99030_xlsx()
+
+        xlsx = base64.b64decode(vat_return.export_file)
+        wb = openpyxl.load_workbook(BytesIO(xlsx), data_only=True)
+        ws = wb.active
+
+        # Verificar 3 secciones existen
+        sections_found = []
+        items_found = set()
+
+        for r in range(6, ws.max_row + 1):
+            cell_val = ws.cell(row=r, column=1).value
+            if cell_val in ('DÉBITOS FISCALES', 'CRÉDITOS FISCALES', 'AUTOLIQUIDACIÓN'):
+                sections_found.append(cell_val)
+            elif cell_val and str(cell_val).replace('.', '').isdigit():
+                items_found.add(str(cell_val))
+
+        self.assertEqual(sections_found, ['DÉBITOS FISCALES', 'CRÉDITOS FISCALES', 'AUTOLIQUIDACIÓN'])
+
+        # Verificar que hay 59 ítems (comparar como sets, el orden no importa)
+        item_codes_expected = {
+            '40', '41', '42', '43', '442', '443', '452', '453', '46', '47', '48', '80', '49',
+            '30', '31', '32', '312', '313', '322', '323', '33', '34', '332', '333', '342', '343',
+            '35', '36', '70', '37', '71', '20', '21', '81', '38', '82', '39',
+            '53', '60', '22', '51', '24', '78', '54', '66', '72', '73', '74',
+            '55', '67', '56', '57', '68', '75', '76', '77', '58', '69', '90'
+        }
+        self.assertEqual(items_found, item_codes_expected)
+        self.assertEqual(len(items_found), 59)
