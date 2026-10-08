@@ -143,8 +143,8 @@ class TestVatBookGenerate(TransactionCase):
         ])
         self.assertEqual(len(lines), 2)
 
-        purchase_line = lines.filtered(lambda l: l.book_type == 'purchase')
-        sale_line = lines.filtered(lambda l: l.book_type == 'sale')
+        purchase_line = lines.filtered(lambda line: line.book_type == 'purchase')
+        sale_line = lines.filtered(lambda line: line.book_type == 'sale')
 
         self.assertEqual(purchase_line.operation_code, '33')
         self.assertEqual(purchase_line.base_general, 1000.0)

@@ -1386,7 +1386,7 @@ class ImportWizard(models.TransientModel):
         for line in self.line_ids:
             line._validate_syntax()
         total = len(self.line_ids)
-        errors = len(self.line_ids.filtered(lambda l: l.state == 'error'))
+        errors = len(self.line_ids.filtered(lambda line: line.state == 'error'))
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',
@@ -1480,7 +1480,7 @@ class ImportWizard(models.TransientModel):
     def action_validate(self):
         """Ejecuta validación 3 niveles en todas las líneas del preview."""
         self.ensure_one()
-        lines = self.line_ids.filtered(lambda l: l.state in ('draft', 'validated'))
+        lines = self.line_ids.filtered(lambda line: line.state in ('draft', 'validated'))
         for line in lines:
             errors = self._validate_line(line)
             if errors:
@@ -1521,7 +1521,7 @@ class ImportWizard(models.TransientModel):
         self.ensure_one()
         if self.mode == 'strict':
             lines_with_errors = self.line_ids.filtered(
-                lambda l: l.state == 'error'
+                lambda line: line.state == 'error'
             )
             if lines_with_errors:
                 raise UserError(
@@ -1530,7 +1530,7 @@ class ImportWizard(models.TransientModel):
                 )
 
         lines = self.line_ids.filtered(
-            lambda l: l.state in ('validated', 'draft')
+            lambda line: line.state in ('validated', 'draft')
         )
         error_fatal = False
         for line in lines:
@@ -1552,14 +1552,14 @@ class ImportWizard(models.TransientModel):
         # Crear log persistente (solo si no hubo error fatal)
         # Re-contar stats desde los states de las líneas
         success_count = len(self.line_ids.filtered(
-            lambda l: l.state in ('imported', 'updated')
+            lambda line: line.state in ('imported', 'updated')
         ))
-        error_count = len(self.line_ids.filtered(lambda l: l.state == 'error'))
-        skipped_count = len(self.line_ids.filtered(lambda l: l.state == 'skipped'))
+        error_count = len(self.line_ids.filtered(lambda line: line.state == 'error'))
+        skipped_count = len(self.line_ids.filtered(lambda line: line.state == 'skipped'))
 
         # Obtener records del log desde record_id (Reference field)
         records_created = []
-        for line in self.line_ids.filtered(lambda l: l.state in ('imported', 'updated')):
+        for line in self.line_ids.filtered(lambda line: line.state in ('imported', 'updated')):
             if line.record_id:
                 try:
                     # record_id es Reference: "model,id"
@@ -1846,7 +1846,6 @@ class ImportWizard(models.TransientModel):
             'file': False,
             'filename': False,
             'template_file': False,
-            'filename': False,
             'state': 'draft',
             'preview_exceeded': False,
         })

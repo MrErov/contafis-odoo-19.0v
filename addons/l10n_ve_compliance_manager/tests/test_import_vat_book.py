@@ -470,13 +470,13 @@ class TestImportVatBook(TransactionCase):
         self.assertEqual(len(lines), 2, 'Debe crear 2 líneas por split de retención')
 
         # Verificar dirección to_vendor
-        line_vendor = lines.filtered(lambda l: l.retention_direction == 'to_vendor')
+        line_vendor = lines.filtered(lambda line: line.retention_direction == 'to_vendor')
         self.assertEqual(len(line_vendor), 1)
         self.assertEqual(line_vendor.vat_retained, 100)
         self.assertEqual(line_vendor.operation_code, '33')
 
         # Verificar dirección to_third
-        line_third = lines.filtered(lambda l: l.retention_direction == 'to_third')
+        line_third = lines.filtered(lambda line: line.retention_direction == 'to_third')
         self.assertEqual(len(line_third), 1)
         self.assertEqual(line_third.vat_retained, 50)
         self.assertEqual(line_third.operation_code, '33')
@@ -590,8 +590,8 @@ class TestImportVatBook(TransactionCase):
         self.assertTrue(len(wizard.line_ids) >= 2)
 
         # Verificar _book_type
-        purchase_lines = wizard.line_ids.filtered(lambda l: l.data.get('_book_type') == 'purchase')
-        sale_lines = wizard.line_ids.filtered(lambda l: l.data.get('_book_type') == 'sale')
+        purchase_lines = wizard.line_ids.filtered(lambda line: line.data.get('_book_type') == 'purchase')
+        sale_lines = wizard.line_ids.filtered(lambda line: line.data.get('_book_type') == 'sale')
 
         self.assertTrue(len(purchase_lines) >= 1, 'Debe haber líneas purchase')
         self.assertTrue(len(sale_lines) >= 1, 'Debe haber líneas sale')
@@ -690,8 +690,8 @@ class TestImportVatBook(TransactionCase):
             ('period_month', '=', '2026-08'),
         ])
 
-        purchase_vbl = vbl.filtered(lambda l: l.book_type == 'purchase')
-        sale_vbl = vbl.filtered(lambda l: l.book_type == 'sale')
+        purchase_vbl = vbl.filtered(lambda line: line.book_type == 'purchase')
+        sale_vbl = vbl.filtered(lambda line: line.book_type == 'sale')
 
         # purchase: 2 facturas, una con multi-rate = 3 líneas
         self.assertEqual(len(purchase_vbl), 3, 'Debe crear 3 líneas purchase (2 facturas, 1 multi-rate)')
@@ -701,8 +701,8 @@ class TestImportVatBook(TransactionCase):
 
         # Verificar operation_codes
         # purchase: general=33, no_credit=30
-        self.assertTrue(all(l.operation_code in ('33', '30') for l in purchase_vbl))
-        self.assertTrue(all(l.operation_code in ('42', '443') for l in sale_vbl))
+        self.assertTrue(all(line.operation_code in ('33', '30') for line in purchase_vbl))
+        self.assertTrue(all(line.operation_code in ('42', '443') for line in sale_vbl))
 
     def _compute_expected_totals_from_fixture(self, book_type):
         """Suma los totales del Excel real para validar contra el import.
@@ -828,8 +828,8 @@ class TestImportVatBook(TransactionCase):
         self.assertEqual(len(wizard.line_ids), 21,
             f'Esperado 21 import.line, got {len(wizard.line_ids)}')
 
-        purchase_lines = wizard.line_ids.filtered(lambda l: l.data.get('_book_type') == 'purchase')
-        sale_lines = wizard.line_ids.filtered(lambda l: l.data.get('_book_type') == 'sale')
+        purchase_lines = wizard.line_ids.filtered(lambda line: line.data.get('_book_type') == 'purchase')
+        sale_lines = wizard.line_ids.filtered(lambda line: line.data.get('_book_type') == 'sale')
         self.assertEqual(len(purchase_lines), 12)
         self.assertEqual(len(sale_lines), 9)
 
@@ -840,8 +840,8 @@ class TestImportVatBook(TransactionCase):
             ('period_month', '=', '2026-08'),
         ])
 
-        purchase_vbl = vbl.filtered(lambda l: l.book_type == 'purchase')
-        sale_vbl = vbl.filtered(lambda l: l.book_type == 'sale')
+        purchase_vbl = vbl.filtered(lambda line: line.book_type == 'purchase')
+        sale_vbl = vbl.filtered(lambda line: line.book_type == 'sale')
 
         # 12 purchase + 9 sale = 21
         self.assertEqual(len(purchase_vbl), 12)

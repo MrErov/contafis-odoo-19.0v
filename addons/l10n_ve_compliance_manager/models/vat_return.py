@@ -159,7 +159,7 @@ class VatReturn(models.Model):
                     self.item_343 += sign * line.vat_reduced
 
         # Retenciones: item_66 = IVA retenido por comprador (direction = by_buyer)
-        retenciones_venta = lines.filtered(lambda l: l.retention_direction == 'by_buyer')
+        retenciones_venta = lines.filtered(lambda line: line.retention_direction == 'by_buyer')
         self.item_66 = sum(retenciones_venta.mapped('vat_retained'))
 
         # Computar agregados

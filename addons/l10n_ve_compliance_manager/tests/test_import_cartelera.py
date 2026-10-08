@@ -478,11 +478,11 @@ class TestImportCartelera(TransactionCase):
         self.assertEqual(len(snapshots), 36, 'Debe crear 36 snapshots (1 cliente x 36 tipos)')
 
         # Verificar que NO hay líneas con error
-        error_lines = wizard.line_ids.filtered(lambda l: l.state == 'error')
+        error_lines = wizard.line_ids.filtered(lambda line: line.state == 'error')
         self.assertEqual(len(error_lines), 0, 'No debe haber líneas con error')
 
         # Verificar que la línea quedó en state='imported'
-        imported_lines = wizard.line_ids.filtered(lambda l: l.state == 'imported')
+        imported_lines = wizard.line_ids.filtered(lambda line: line.state == 'imported')
         self.assertEqual(len(imported_lines), 1, 'Debe haber 1 línea importada')
 
         # Verificar que se creó el cliente
