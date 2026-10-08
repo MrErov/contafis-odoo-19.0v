@@ -1,0 +1,30 @@
+default_language_version:
+  python: python3.14
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-xml
+      - id: check-added-large-files
+        args: ["--maxkb=500"]
+      - id: mixed-line-ending
+        args: ["--fix=lf"]
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.5.7
+    hooks:
+      - id: ruff
+        args: ["--fix"]
+
+  # pylint-odoo: NO hay release compatible con Odoo 19 (tags solo hasta v10.0.12).
+  # Activar en DevOps.2 cuando exista release 19.x.
+  # - repo: https://github.com/OCA/pylint-odoo
+  #   rev: XXXXXX  # esperar tag 19.0.0.0.1 o similar
+  #   hooks:
+  #     - id: pylint-odoo
+  #       args: ["--load-plugins=pylint_odoo"]
+  #       exclude: "(static/description/|migrations/)"
