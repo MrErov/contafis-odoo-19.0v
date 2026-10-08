@@ -103,3 +103,37 @@ Reemplazar los Excel de libro de compras/ventas y Planilla IVA 99030 que los con
 Además del canal Odoo-first (account.move → wizard → libro), el
 sistema permite importar el libro directamente desde el Excel que
 usa el contador. Ver spec 10.
+
+## Export a Excel
+
+### Export de vat.book.line
+
+- Wizard: `l10n.ve.vat.book.export.wizard`
+- Campos: `period_month`, `company_id`, `book_type` (purchase/sale/both)
+- Genera XLSX con headers idénticos al template de import (round-trip)
+- 1 hoja por book_type (COMPRAS / VENTAS / both con 2 hojas)
+- Fila TOTAL GENERAL con sumas por columna (no combina base con IVA)
+- Retenciones separadas por `retention_direction`
+- Acción expuesta vía Actions menu (`binding_model_id`)
+
+### Export de vat.return (Planilla 99030)
+
+- Método `action_export_99030_xlsx()` en `vat.return`
+- Campos nuevos: `export_file` (Binary), `export_filename` (Char)
+- Genera XLSX con 3 secciones: DÉBITOS, CRÉDITOS, AUTOLIQUIDACIÓN
+- Los 59 campos `item_XX` del modelo con conceptos SENIAT literales (extraídos del Excel real del contador, NO del PDF original)
+  - 48 corresponden a los ítems numerados de la planilla SENIAT oficial
+  - 11 son campos auxiliares (subtotales y ajustes) que el formulario calcula pero no numera físicamente
+- Botón "Exportar a Excel" en el header del form
+
+### Corrección del PDF
+
+El PDF original tenía conceptos inventados. Se corrigieron los 59
+conceptos con los nombres literales del SENIAT (mismo origen que el
+XLSX). El layout del PDF no cambió.
+
+### Nota de implementación
+
+Si la compañía no tiene RIF seteado, el export muestra None en la
+columna RIF. Pendiente: agregar fallback `company.vat or ''` en el
+método de export XLSX.

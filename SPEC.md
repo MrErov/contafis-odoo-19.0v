@@ -107,6 +107,12 @@ para contadores en Venezuela. Multi-cliente (el contador gestiona varias empresa
 - ✅ 6 tests de integración con Excel real
 - ✅ 96 tests pasando (90 + 6 nuevos)
 
+### G.10: Export bidireccional (COMPLETADA)
+- ✅ Export vat.book.line a Excel (round-trip con import)
+- ✅ Export vat.return (Planilla 99030) a Excel
+- ✅ Corrección de conceptos del PDF con nombres SENIAT literales
+- ✅ 107 tests pasando (96 + 11 nuevos)
+
 ### Trabajo Futuro
 - ⬜ Spec 11: Conciliación ISLR
 - ⬜ Migrar `_sql_constraints` a `models.Constraint` (Odoo 19 lo
@@ -116,12 +122,13 @@ para contadores en Venezuela. Multi-cliente (el contador gestiona varias empresa
   conciliación fiscal (ya en repo, sin tests)
 - ⬜ Importación de asientos contables (account.move)
 - ⬜ Integración MCP Odoo (mart337i/odoo-dev-mcp)
+- ⬜ Fix RIF None en export XLSX cuando company.vat está vacío
 
 ## Estado del Portafolio
 
 - ✅ README.md, CHANGELOG.md, LICENSE (LGPL-3), CONTRIBUTING.md
 - ✅ Metodología SDD (AGENTS.md, docs/specs/, opencode.json)
-- ✅ 96 tests pasando
+- ✅ 107 tests pasando
 - ✅ Comandos OpenCode en `.opencode/commands/`
 - ⬜ Capturas de pantalla en docs/screenshots/
 - ⬜ Topics GitHub
