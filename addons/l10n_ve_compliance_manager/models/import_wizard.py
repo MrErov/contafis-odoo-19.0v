@@ -1103,6 +1103,13 @@ class ImportWizard(models.TransientModel):
             elif rate == 'not_taxed':
                 base_not_taxed = data.get('base_not_taxed') or 0
 
+        # Fallback: si hay base > 0 pero VAT = 0, computar (fórmulas Excel no leídas)
+        # Misma lógica para purchase y sale: 16% general, 8% reduced
+        if base_general > 0 and not vat_general:
+            vat_general = round(base_general * 0.16, 2)
+        if base_reduced > 0 and not vat_reduced:
+            vat_reduced = round(base_reduced * 0.08, 2)
+
         total_with_vat = (base_general + vat_general + base_reduced + vat_reduced +
                           base_no_credit + base_not_subject + base_not_taxed)
 
@@ -1280,6 +1287,9 @@ class ImportWizard(models.TransientModel):
         s = str(value).strip()
         if not s:
             return None
+        # Fórmula Excel (startswith '=') → no parseable, computar después
+        if s.startswith('='):
+            return None
         # Manejar signo negativo
         negative = s.startswith('-')
         if negative:
@@ -1399,10 +1409,27 @@ class ImportWizard(models.TransientModel):
         """Genera preview de las primeras N filas.
 
         Para import_type='cartelera', el preview ya se generó en _load_cartelera_file.
+        Para import_type='vat_book_purchase'/'vat_book_sale'/'vat_book_both',
+        el preview ya se generó en _load_vat_book_file.
         """
         self.ensure_one()
         if self.import_type == 'cartelera':
             # Preview ya generado, solo verificar que hay líneas
+            if not self.line_ids:
+                raise UserError(_('No hay datos de preview. Cargue el archivo primero.'))
+            if len(self.line_ids) > self.preview_limit:
+                self.preview_exceeded = True
+            self.state = 'preview'
+            return {
+                'type': 'ir.actions.act_window',
+                'res_model': 'l10n.ve.import.wizard',
+                'res_id': self.id,
+                'view_mode': 'form',
+                'target': 'new',
+            }
+
+        if self.import_type in ('vat_book_purchase', 'vat_book_sale', 'vat_book_both'):
+            # Preview ya generado en _load_vat_book_file
             if not self.line_ids:
                 raise UserError(_('No hay datos de preview. Cargue el archivo primero.'))
             if len(self.line_ids) > self.preview_limit:
