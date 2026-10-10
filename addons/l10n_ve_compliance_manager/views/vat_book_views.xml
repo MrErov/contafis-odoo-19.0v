@@ -3,25 +3,28 @@
         <field name="name">l10n.ve.vat.book.line.list</field>
         <field name="model">l10n.ve.vat.book.line</field>
         <field name="arch" type="xml">
-            <list string="Libro de Compras/Ventas" multi_edit="1">
-                <field name="book_type"/>
-                <field name="period_month"/>
-                <field name="partner_id"/>
-                <field name="invoice_number"/>
-                <field name="control_number"/>
-                <field name="operation_code"/>
-                <field name="total_with_vat"/>
-                <field name="base_general" invisible="book_type == 'purchase'"/>
-                <field name="vat_general" invisible="book_type == 'purchase'"/>
-                <field name="base_reduced" invisible="book_type == 'purchase'"/>
-                <field name="vat_reduced" invisible="book_type == 'purchase'"/>
-                <field name="base_no_credit" invisible="book_type == 'sale'"/>
-                <field name="base_not_subject" invisible="book_type == 'sale'"/>
-                <field name="base_not_taxed" invisible="book_type == 'sale'"/>
-                <field name="retention_number"/>
-                <field name="vat_retained"/>
-                <field name="retention_direction"/>
-                <field name="company_id" groups="base.group_multi_company"/>
+            <list string="Libro de Compras/Ventas" multi_edit="0">
+                <field name="book_type" widget="badge"
+                       decoration-success="book_type == 'sale'"
+                       decoration-info="book_type == 'purchase'"/>
+                <field name="period_month" string="Per&#237;odo"/>
+                <field name="partner_id" string="Proveedor/Cliente"/>
+                <field name="invoice_number" string="Factura"/>
+                <field name="operation_code" string="C&#243;digo SENIAT"/>
+                <field name="total_with_vat" string="Total c/IVA"
+                       widget="float" sum="Total c/IVA"/>
+                <field name="control_number" string="N&#176; Control" optional="hide"/>
+                <field name="base_general" string="Base 16%" optional="hide" widget="float" sum="Base 16%"/>
+                <field name="vat_general" string="IVA 16%" optional="hide" widget="float" sum="IVA 16%"/>
+                <field name="base_reduced" string="Base 8%" optional="hide" widget="float" sum="Base 8%"/>
+                <field name="vat_reduced" string="IVA 8%" optional="hide" widget="float" sum="IVA 8%"/>
+                <field name="base_no_credit" string="Base s/Cr&#233;dito" optional="hide" widget="float" sum="Base s/Cr&#233;dito"/>
+                <field name="base_not_subject" string="Base No Sujeta" optional="hide" widget="float" sum="Base No Sujeta"/>
+                <field name="base_not_taxed" string="Base No Gravada" optional="hide" widget="float" sum="Base No Gravada"/>
+                <field name="retention_number" string="N&#176; Retenci&#243;n" optional="hide"/>
+                <field name="vat_retained" string="IVA Retenido" optional="hide" widget="float" sum="Retenido"/>
+                <field name="retention_direction" string="Dir. Retenci&#243;n" optional="hide"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
             </list>
         </field>
     </record>
@@ -30,84 +33,67 @@
         <field name="name">l10n.ve.vat.book.line.form</field>
         <field name="model">l10n.ve.vat.book.line</field>
         <field name="arch" type="xml">
-            <form string="Línea Libro IVA" create="false" edit="false">
+            <form string="Línea Libro IVA" create="false">
                 <sheet>
-                    <group>
-                        <group>
-                            <field name="book_type"/>
-                            <field name="period_month"/>
-                            <field name="partner_id"/>
-                            <field name="company_id" groups="base.group_multi_company"/>
-                        </group>
-                        <group>
-                            <field name="invoice_number"/>
-                            <field name="control_number"/>
-                            <field name="operation_code"/>
-                        </group>
+                    <group string="Identificación">
+                        <field name="book_type"/>
+                        <field name="period_month"/>
+                        <field name="partner_id"/>
+                        <field name="invoice_number"/>
+                        <field name="control_number"/>
+                        <field name="operation_code"/>
                     </group>
-                    <notebook>
-                        <page string="Ventas" invisible="book_type != 'sale'">
-                            <group>
-                                <group string="Base General (16%)">
-                                    <field name="base_general"/>
-                                    <field name="vat_general"/>
-                                </group>
-                                <group string="Base Reducida (8%)">
-                                    <field name="base_reduced"/>
-                                    <field name="vat_reduced"/>
-                                </group>
-                                <group string="Otros">
-                                    <field name="base_not_subject"/>
-                                    <field name="base_not_taxed"/>
-                                </group>
-                            </group>
-                        </page>
-                        <page string="Compras" invisible="book_type != 'purchase'">
-                            <group>
-                                <group string="Base General (16%)">
-                                    <field name="base_general"/>
-                                    <field name="vat_general"/>
-                                </group>
-                                <group string="Base Reducida (8%)">
-                                    <field name="base_reduced"/>
-                                    <field name="vat_reduced"/>
-                                </group>
-                                <group string="Sin Crédito / No Sujetos">
-                                    <field name="base_no_credit"/>
-                                    <field name="base_not_subject"/>
-                                    <field name="base_not_taxed"/>
-                                </group>
-                            </group>
-                        </page>
-                        <page string="Retenciones">
-                            <group>
-                                <field name="retention_number"/>
-                                <field name="vat_retained"/>
-                                <field name="retention_direction"/>
-                            </group>
-                        </page>
-                    </notebook>
+                    <group string="Bases e IVA">
+                        <field name="total_with_vat"/>
+                        <field name="base_general"/>
+                        <field name="vat_general"/>
+                        <field name="base_reduced"/>
+                        <field name="vat_reduced"/>
+                        <field name="base_no_credit"/>
+                        <field name="base_not_subject"/>
+                        <field name="base_not_taxed"/>
+                    </group>
+                    <group string="Retenciones">
+                        <field name="retention_number"/>
+                        <field name="vat_retained"/>
+                        <field name="retention_direction"/>
+                    </group>
                 </sheet>
             </form>
         </field>
     </record>
 
-    <record id="view_l10n_ve_vat_book_line_search" model="ir.ui.view">
+<record id="view_l10n_ve_vat_book_line_search" model="ir.ui.view">
         <field name="name">l10n.ve.vat.book.line.search</field>
         <field name="model">l10n.ve.vat.book.line</field>
         <field name="arch" type="xml">
-            <search string="Libro de Compras/Ventas">
-                <field name="period_month"/>
-                <field name="partner_id"/>
-                <field name="invoice_number"/>
-                <field name="operation_code"/>
-                <field name="book_type"/>
-                <filter string="Compras" name="filter_purchase" domain="[('book_type', '=', 'purchase')]"/>
-                <filter string="Ventas" name="filter_sale" domain="[('book_type', '=', 'sale')]"/>
+            <search string="L&#237;neas Libro IVA">
+                <field name="partner_id" string="Proveedor/Cliente"/>
+                <field name="invoice_number" string="Factura"/>
+                <field name="period_month" string="Per&#237;odo"/>
+                <field name="operation_code" string="C&#243;digo SENIAT"/>
+
+                <filter string="Compras" name="filter_purchase"
+                        domain="[('book_type', '=', 'purchase')]"/>
+                <filter string="Ventas" name="filter_sale"
+                        domain="[('book_type', '=', 'sale')]"/>
+                <filter string="Con Retenci&#243;n" name="filter_with_retention"
+                        domain="[('vat_retained', '>', 0)]"/>
+                <filter string="Con Importaci&#243;n" name="filter_import"
+                        domain="[('operation_code', 'in', ['31','32','312','313','322','323'])]"/>
+
                 <separator/>
-                <filter string="Agrupar por Período" name="groupby_period" context="{'group_by': 'period_month'}"/>
-                <filter string="Agrupar por Tipo" name="groupby_type" context="{'group_by': 'book_type'}"/>
-                <filter string="Agrupar por Proveedor/Cliente" name="groupby_partner" context="{'group_by': 'partner_id'}"/>
+
+                <group expand="0" string="Agrupar por">
+                    <filter string="Tipo de Libro" name="groupby_book_type"
+                            context="{'group_by': 'book_type'}"/>
+                    <filter string="Per&#237;odo" name="groupby_period"
+                            context="{'group_by': 'period_month'}"/>
+                    <filter string="Proveedor/Cliente" name="groupby_partner"
+                            context="{'group_by': 'partner_id'}"/>
+                    <filter string="C&#243;digo SENIAT" name="groupby_op_code"
+                            context="{'group_by': 'operation_code'}"/>
+                </group>
             </search>
         </field>
     </record>
