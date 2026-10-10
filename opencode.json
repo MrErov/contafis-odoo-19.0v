@@ -1,5 +1,19 @@
 {
   "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "servers": {
+      "chrome-devtools": {
+        "type": "local",
+        "command": ["npx", "-y", "chrome-devtools-mcp@latest"]
+      }
+    }
+  },
+  "skills": {
+    "urls": [
+      "https://github.com/docker/skills",
+      "https://www.skills.sh/vercel-labs/skills/find-skills"
+    ]
+  },
   "agent": {
     "odoo19-dev": {
       "description": "Desarrollador especializado en módulos Odoo 19.0. Consulta AGENTS.md, memory.md y docs/specs/ antes de actuar.",
