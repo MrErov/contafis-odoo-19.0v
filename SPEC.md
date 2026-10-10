@@ -131,6 +131,18 @@ para contadores en Venezuela. Multi-cliente (el contador gestiona varias empresa
 - ✅ Ruff limpio en E/W/F/I/UP sobre todo el repo
 - ✅ 107 tests pasando
 
+### UX-1: Rediseño vistas vat.return (COMPLETADA)
+- ✅ List view: columnas ordenadas, badges, sumatorias, totales
+- ✅ Form view: grupos lógicos, readonly, readonly no editable
+- ✅ Search view: filtros por estado, período, cliente, group by
+- ✅ Commit: 4239263
+
+### UX-2: Rediseño vistas vat.book.line (COMPLETADA)
+- ✅ List view: badge book_type, sumatorias por columna, optional=hide
+- ✅ Form view: 3 grupos (Identificación, Bases e IVA, Retenciones), create=false
+- ✅ Search view: campos + 4 filtros (Compras, Ventas, Con Retención, Con Importación) + 4 group by
+- ✅ Commit: 729f0f4
+
 ### Trabajo Futuro
 - ⬜ Spec 11: Conciliación ISLR
 - ⬜ Migrar `_sql_constraints` a `models.Constraint` (Odoo 19 lo

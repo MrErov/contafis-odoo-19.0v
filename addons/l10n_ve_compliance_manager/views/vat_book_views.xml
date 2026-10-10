@@ -33,9 +33,9 @@
         <field name="name">l10n.ve.vat.book.line.form</field>
         <field name="model">l10n.ve.vat.book.line</field>
         <field name="arch" type="xml">
-            <form string="Línea Libro IVA" create="false">
+            <form string="L&#237;nea Libro IVA" create="false">
                 <sheet>
-                    <group string="Identificación">
+                    <group string="Identificaci&#243;n">
                         <field name="book_type"/>
                         <field name="period_month"/>
                         <field name="partner_id"/>
@@ -63,7 +63,7 @@
         </field>
     </record>
 
-<record id="view_l10n_ve_vat_book_line_search" model="ir.ui.view">
+    <record id="view_l10n_ve_vat_book_line_search" model="ir.ui.view">
         <field name="name">l10n.ve.vat.book.line.search</field>
         <field name="model">l10n.ve.vat.book.line</field>
         <field name="arch" type="xml">
@@ -84,16 +84,14 @@
 
                 <separator/>
 
-                <group expand="0" string="Agrupar por">
-                    <filter string="Tipo de Libro" name="groupby_book_type"
-                            context="{'group_by': 'book_type'}"/>
-                    <filter string="Per&#237;odo" name="groupby_period"
-                            context="{'group_by': 'period_month'}"/>
-                    <filter string="Proveedor/Cliente" name="groupby_partner"
-                            context="{'group_by': 'partner_id'}"/>
-                    <filter string="C&#243;digo SENIAT" name="groupby_op_code"
-                            context="{'group_by': 'operation_code'}"/>
-                </group>
+                <filter string="Agrupar por Tipo de Libro" name="groupby_book_type"
+                        context="{'group_by': 'book_type'}"/>
+                <filter string="Agrupar por Per&#237;odo" name="groupby_period"
+                        context="{'group_by': 'period_month'}"/>
+                <filter string="Agrupar por Proveedor/Cliente" name="groupby_partner"
+                        context="{'group_by': 'partner_id'}"/>
+                <filter string="Agrupar por C&#243;digo SENIAT" name="groupby_op_code"
+                        context="{'group_by': 'operation_code'}"/>
             </search>
         </field>
     </record>
@@ -102,7 +100,7 @@
         <field name="name">l10n.ve.vat.book.line.pivot</field>
         <field name="model">l10n.ve.vat.book.line</field>
         <field name="arch" type="xml">
-            <pivot string="Análisis Libro IVA">
+            <pivot string="An&#225;lisis Libro IVA">
                 <field name="book_type" type="row"/>
                 <field name="period_month" type="col"/>
                 <field name="partner_id" type="row"/>
@@ -130,8 +128,8 @@
                 Genere el libro desde facturas
             </p>
             <p>
-                Use el wizard "Generar Libro IVA" para crear líneas
-                automáticamente desde las facturas del período.
+                Use el wizard "Generar Libro IVA" para crear l&#237;neas
+                autom&#225;ticamente desde las facturas del per&#237;odo.
             </p>
         </field>
     </record>
