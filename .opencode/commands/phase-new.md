@@ -8,7 +8,7 @@ agent: plan
 
 **PROTOCOLO OBLIGATORIO — respétalo estrictamente:**
 
-1. Lee `AGENTS.md` y `docs/memory.md`.
+1. Lee `docs/constitution.md`, `AGENTS.md` y `docs/memory.md`.
 2. Busca la spec relevante en `docs/specs/`.
 3. **NO ESCRIBAS CÓDIGO NI MODIFIQUES ARCHIVOS.** Solo propón un plan.
 4. El plan debe incluir: archivos a modificar, cambios exactos, tests, casos límite.

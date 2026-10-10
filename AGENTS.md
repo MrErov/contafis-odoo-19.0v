@@ -8,6 +8,7 @@ Ver SPEC.md para especificaciones técnicas completas.
 ## Repo Map
 - `addons/l10n_ve_compliance_manager/` → Código del módulo Odoo
 - `docs/` → Documentación interna (memory.md, specs/)
+- `docs/constitution.md` → 6 principios innegociables. Se leen ANTES que cualquier spec o código.
 - `docker-compose.yml`, `odoo.conf.example` → Setup de desarrollo
 - `tests/` → Pruebas unitarias
 
@@ -42,6 +43,7 @@ docker compose logs -f web
 - No usar `attrs=` ni `states=` (deprecados en Odoo 17+)
 
 ## Workflow Rules
+- Leer `docs/constitution.md` antes de tocar código.
 - Antes de tocar código, leer `docs/specs/[capacidad].md` correspondiente.
 - Consultar `docs/memory.md` para decisiones ya tomadas. NO preguntar lo ya resuelto.
 - **Actualizar `docs/memory.md` con decisiones, aprendizajes y pendientes nuevos. Commitear junto al código.**

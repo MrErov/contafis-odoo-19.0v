@@ -14,9 +14,14 @@ Ejecuta y muéstrame la salida literal:
 3. Tests:
    !docker compose run --rm web odoo -d contea -u l10n_ve_compliance_manager --test-enable --stop-after-init --workers 0 --test-tags /l10n_ve_compliance_manager 2>&1 | grep -E "failed|tests when"
 
-Esperado: `0 failed, 0 error(s) of N tests`.
+   Esperado: `0 failed, 0 error(s) of N tests`.
 
-Si hay algún test fallando → DETENTE y reporta. No continúes.
+   Si hay algún test fallando → DETENTE y reporta. No continúes.
+
+4. Verificación de constitución:
+   ¿La fase cerrada respetó los 6 principios de
+   `docs/constitution.md`? Reportar cualquier violación antes
+   de continuar.
 
 ## Paso 2: Actualizar SPEC.md
 
