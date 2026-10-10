@@ -44,6 +44,7 @@ docker compose logs -f web
 ## Workflow Rules
 - Antes de tocar código, leer `docs/specs/[capacidad].md` correspondiente.
 - Consultar `docs/memory.md` para decisiones ya tomadas. NO preguntar lo ya resuelto.
+- **Actualizar `docs/memory.md` con decisiones, aprendizajes y pendientes nuevos. Commitear junto al código.**
 - NO tocar archivos fuera de `addons/l10n_ve_compliance_manager/` sin autorización.
 - NO commitear secrets (`odoo.conf`, `.env`, `filestore/`).
 - Commits en inglés con Conventional Commits: `feat:`, `fix:`, `docs:`, `test:`, `refactor:`, `chore:`.
