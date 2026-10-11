@@ -3,8 +3,10 @@ description: SDD — Divide el plan en tareas pequeñas y verificables
 agent: plan
 ---
 
-A partir de `specs/$1/spec.md` y `specs/$1/plan.md`, genera
-`specs/$1/tasks.md` con:
+IMPORTANTE: las rutas de specs son relativas a la RAÍZ del repo (donde está AGENTS.md). NO usar docs/specs/.
+
+A partir de `specs/$1/spec.md (relativo a la RAÍZ del repo, NO a docs/)` y `specs/$1/plan.md (relativo a la RAÍZ del repo, NO a docs/)`, genera
+`specs/$1/tasks.md (relativo a la RAÍZ del repo, NO a docs/)` con:
 
 - Tareas pequeñas (máx. 20-30 min cada una), en orden de dependencia.
 - Cada una con los RF que cubre y una línea "Hecho cuando:"

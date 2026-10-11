@@ -3,7 +3,9 @@ description: SDD — Dónde estamos (fase actual + siguiente paso)
 agent: plan
 ---
 
-Lee `specs/$1/` (spec.md, plan.md, tasks.md, los que existan) y
+IMPORTANTE: las rutas de specs son relativas a la RAÍZ del repo (donde está AGENTS.md). NO usar docs/specs/.
+
+Lee `specs/$1/ (relativo a la RAÍZ del repo, NO a docs/)` (spec.md, plan.md, tasks.md, los que existan) y
 `docs/memory.md`.
 
 Respondé en pocas líneas:

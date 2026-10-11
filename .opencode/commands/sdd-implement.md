@@ -3,8 +3,10 @@ description: SDD — Implementa UNA tarea, tests primero
 agent: build
 ---
 
-Implementa SOLO la tarea `$2` de `specs/$1/tasks.md`, siguiendo
-`specs/$1/plan.md`, `docs/constitution.md` y `AGENTS.md`.
+IMPORTANTE: las rutas de specs son relativas a la RAÍZ del repo (donde está AGENTS.md). NO usar docs/specs/.
+
+Implementa SOLO la tarea `$2` de `specs/$1/tasks.md (relativo a la RAÍZ del repo, NO a docs/)`, siguiendo
+`specs/$1/plan.md (relativo a la RAÍZ del repo, NO a docs/)`, `docs/constitution.md` y `AGENTS.md`.
 
 Pasos:
 
