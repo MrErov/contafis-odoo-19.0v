@@ -7,7 +7,8 @@
 | Archivo | Responsabilidad | RFs |
 |---------|-----------------|-----|
 | `addons/l10n_ve_compliance_manager/models/vat_book_line.py` | Extender `vat.book.line`: campos `source`, `account_move_id`, `modified_by`, `modified_at`, `is_manually_modified` + método `_get_operation_code()` | RF-2, RF-9, RF-10, RF-12 |
-| `addons/l10n_ve_compliance_manager/models/account_move.py` | Extender `account.move`: `_generate_vat_book_line()`, override `_post()`, override `button_draft()` | RF-2, RF-3, RF-8 |
+| `addons/l10n_ve_compliance_manager/models/account_move.py` | Extender `account.move`: `_generate_vat_book_line()`, override `_post()`, override `button_draft()`, campo `l10n_ve_control_number` | RF-2, RF-3, RF-8, RF-16 |
+| `addons/l10n_ve_compliance_manager/models/account_tax.py` | Extender `account.tax`: campo `l10n_ve_tax_type` (Selection) | RF-15 |
 | `addons/l10n_ve_compliance_manager/models/__init__.py` | Exportar nuevos modelos | — |
 
 ### Nuevo modelo: Wizard de factura física
@@ -469,11 +470,13 @@ docker compose run --rm web odoo -d contea \
 | `test_button_draft_deletes_odoo_lines` | RF-8 | button_draft → borra solo source='odoo_invoice' |
 | `test_multi_base_invoice_creates_multiple_lines` | RF-10 | Base general + reducida → 2 vat.book.line mismo account_move_id |
 
-#### `test_vat_book_line_fields.py` (2 tests)
+#### `test_vat_book_line_fields.py` (4 tests)
 | Test | RFs | Qué verifica |
 |------|-----|--------------|
 | `test_source_and_audit_fields` | RF-9 | Campos source, account_move_id, modified_by, modified_at, is_manually_modified existen y funcionan |
 | `test_get_operation_code_helper` | RF-12 | `_get_operation_code(rate, book_type)` retorna códigos SENIAT correctos |
+| `test_account_tax_l10n_ve_type_field` | RF-15 | account.tax tiene l10n_ve_tax_type Selection con valores correctos |
+| `test_account_move_control_number_field` | RF-16 | account.move tiene l10n_ve_control_number Char y wizard lo completa |
 
 #### `test_export_regression.py` (1 test)
 | Test | RFs | Qué verifica |
@@ -505,21 +508,19 @@ docker compose run --rm web odoo -d contea \
 | RF-12 | `vat_book_line.py`, `import_wizard.py` | `_get_operation_code()` @api.model | `test_get_operation_code_helper` |
 | RF-13 | `physical_invoice_wizard.py` | `physical_total` field + onchange warning | `test_wizard_physical_total_warning` |
 | RF-14 | `account_move.py`, `regenerate_confirm_wizard.py`, views | `action_regenerate_vat_book_line()` + wizard `l10n.ve.regenerate.confirm.wizard` | `test_regenerate_confirms_manual_edits` |
+| RF-15 | `account_tax.py`, `physical_invoice_wizard.py` | `_inherit account.tax` + uso en wizard | `test_account_tax_l10n_ve_type_field` |
+| RF-16 | `account_move.py`, `physical_invoice_wizard.py` | `_inherit account.move` + campo en wizard | `test_account_move_control_number_field` |
 
 ---
 
 ## Preguntas abiertas (requieren confirmación antes de implementar)
 
-1. **Campo `l10n_ve_tax_type` en `account.tax`**: Verificado con grep → **NO existe**. Hay que agregarlo vía `_inherit` de `account.tax` (nuevo RF-15: campo Selection con valores 'general', 'reduced', 'additional', 'no_credit', 'not_subject', 'exempt', 'import', 'non_contrib').
+1. **Cuenta por defecto para "sin derecho a crédito"**: Usar `property_account_expense_id` del partner + parámetro de compañía `l10n_ve_no_credit_account_id` como fallback (configurable en res.company).
 
-2. **Cuenta por defecto para "sin derecho a crédito"**: Usar `property_account_expense_id` del partner + parámetro de compañía `l10n_ve_no_credit_account_id` como fallback (configurable en res.company).
+2. **Diarios por defecto compra/venta**: Usar los existentes (`type='purchase'` / `'sale'`). NO crear específicos del módulo.
 
-3. **Diarios por defecto compra/venta**: Usar los existentes (`type='purchase'` / `'sale'`). NO crear específicos del módulo.
-
-4. **Número de control**: Verificar si `account.move` ya tiene campo. Si no, agregar `l10n_ve_control_number` vía `_inherit` (nuevo RF-16).
-
-5. **`vat.book.line` hereda de `mail.thread`**: **SÍ, tracking=True**. La constitution pide trazabilidad visible. Agregar `mail.thread` al `_inherit` si no lo tiene y `tracking=True` en `modified_by`/`modified_at`.
+3. **`vat.book.line` hereda de `mail.thread`**: **SÍ, tracking=True**. La constitution pide trazabilidad visible. Agregar `mail.thread` al `_inherit` si no lo tiene y `tracking=True` en `modified_by`/`modified_at`.
 
 ---
 
-**Entrega:** `specs/001-backend-odoo-first/plan.md` — Plan técnico completo con 10 archivos a tocar, 5 funciones puras, 2 algoritmos clave, 3 vistas XML, 5 decisiones justificadas, 12 tests mapeados a RFs, 5 preguntas abiertas pendientes.
+**Entrega:** `specs/001-backend-odoo-first/plan.md` — Plan técnico completo con 12 archivos a tocar, 5 funciones puras, 2 algoritmos clave, 3 vistas XML, 5 decisiones justificadas, 14 tests mapeados a RFs, 3 preguntas abiertas pendientes.

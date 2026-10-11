@@ -44,13 +44,15 @@ Estos campos se actualizan vía override de write() cuando el usuario es distint
 - RF-12: EL SISTEMA mueve la función `_get_vat_book_operation_code(rate_type, book_type)` de `import_wizard.py` a `vat_book_line.py` como método `_get_operation_code()` a nivel modelo. Actualiza las llamadas existentes en `import_wizard.py`. El helper es @api.model (no depende de un record).
 - RF-13: EL SISTEMA incluye campo opcional "Total según factura física (Bs)" en el wizard de factura. SI el total físico ≠ sum(bases) + sum(IVAs calculadas), ENTONCES muestra warning informativo (no bloquea). El usuario edita las BASES si no cuadran; el campo 'Total según factura física' es solo informativo (readonly).
 - RF-14: SI el usuario pulsa "Regenerar libro" en una factura con líneas vat.book.line previamente editadas manualmente, ENTONCES diálogo estándar de Odoo (self.env.user.notify_warning con confirmación) avisa "Regenerar borrará ediciones manuales. ¿Continuar?". El usuario puede cancelar.
+- RF-15: EL SISTEMA agrega campo l10n_ve_tax_type (Selection) a account.tax vía _inherit, con valores: 'general', 'reduced', 'additional', 'no_credit', 'exempt', 'not_subject', 'import', 'non_contrib'. Este campo permite mapear cada tax a su rate_type para el derivador _generate_vat_book_line().
+- RF-16: EL SISTEMA agrega campo l10n_ve_control_number (Char) a account.move vía _inherit, para almacenar el número de control SENIAT. El wizard lo completa y el derivador lo copia a vat.book.line.control_number.
 
 ## Requisitos no funcionales
 
 - Rendimiento: `_generate_vat_book_line()` ejecuta en <200ms para factura típica (5 líneas base).
 - Trazabilidad: `vat.book.line` registra `account_move_id` para auditoría bidireccional.
 - Multi-cliente: todo filtra por `company_id` (heredado de `account.move`).
-- Tests: 12 tests nuevos (4 mínimos + 5 adicionales + 3 por RF-12/13/14) + 107 existentes = 119 total pasando.
+- Tests: 14 tests nuevos (4 mínimos + 5 adicionales + 3 por RF-12/13/14 + 2 por RF-15/16) + 107 existentes = 121 total pasando.
 
 ## Casos límite
 
@@ -80,7 +82,7 @@ Estos campos se actualizan vía override de write() cuando el usuario es distint
 
 ## Criterios de finalización
 
-- 119 tests pasando (107 base + 12 nuevos).
+- 121 tests pasando (107 base + 14 nuevos).
 - Ruff limpio.
 - Verificación manual end-to-end: crear factura compra por wizard → verificar `account.move` posteado + `vat.book.line` con `source='odoo_invoice'` y bases/IVAs correctos → export XLSX válido con totales cuadrados.
 
