@@ -183,10 +183,9 @@ class VatReturn(models.Model):
         self.item_49 = self.item_47 + self.item_48 - self.item_80
 
         # Créditos
-        self.item_35 = (self.item_30 + self.item_31 + self.item_32 +
-                        self.item_312 + self.item_313 + self.item_322 +
-                        self.item_323 + self.item_33 + self.item_332 +
-                        self.item_333 + self.item_342 + self.item_343)
+        self.item_35 = (self.item_30 + self.item_31 + self.item_312 +
+                        self.item_313 + self.item_33 + self.item_332 +
+                        self.item_333)
         self.item_36 = (self.item_32 + self.item_322 + self.item_323 +
                         self.item_34 + self.item_342 + self.item_343)
 
