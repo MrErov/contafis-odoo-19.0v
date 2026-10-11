@@ -54,6 +54,16 @@ class VatBookLine(models.Model):
         digits='Account',
     )
 
+    base_import_16 = fields.Float(
+        string='Base Importación 16%',
+        digits='Account',
+    )
+
+    vat_import_16 = fields.Float(
+        string='IVA Importación 16%',
+        digits='Account',
+    )
+
     base_reduced = fields.Float(
         string='Base Imponible Reducida (8%)',
         digits='Account',

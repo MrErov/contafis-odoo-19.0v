@@ -707,9 +707,9 @@ class TestImportVatBook(TransactionCase):
     def _compute_expected_totals_from_fixture(self, book_type):
         """Suma los totales del Excel real para validar contra el import.
 
-        NOTA: El import combina base_import_16 en base_general y vat_import_16 en vat_general
-        (ver _build_vat_book_vals en import_wizard.py). Este helper replica esa lógica
-        para que la comparación sea apple-to-apple.
+        Tras el fix base_import (2026-10-10), el import ya NO combina
+        base_import_16 dentro de base_general. El helper devuelve los
+        valores separados tal como el modelo los almacena.
         """
         from pathlib import Path
 
@@ -749,10 +749,9 @@ class TestImportVatBook(TransactionCase):
                 if isinstance(v, int | float):
                     vat_retained_vendor += v
 
-            # Replicar lógica del import: combinar import en general
             return {
-                'base_general': base_general + base_import_16,
-                'vat_general': vat_general + vat_import_16,
+                'base_general': base_general,
+                'vat_general': vat_general,
                 'base_no_credit': base_no_credit,
                 'base_import_16': base_import_16,
                 'vat_import_16': vat_import_16,
@@ -917,18 +916,29 @@ class TestImportVatBook(TransactionCase):
 
         total_base = sum(vbl.mapped('base_general'))
         total_vat = sum(vbl.mapped('vat_general'))
+        total_base_import = sum(vbl.mapped('base_import_16'))
+        total_vat_import = sum(vbl.mapped('vat_import_16'))
 
-        # Valores del fixture COMPRAS regenerado
-        # (base_general + base_import_16 combinados según _build_vat_book_vals)
-        # base_general = sum(col23 filas 8-17) + col19 fila 13
-        # vat_general  = sum(col24 filas 8-17) + col20 fila 13
-        EXPECTED_BASE_GENERAL = 2477517.43  # actualizar si el fixture cambia
-        EXPECTED_VAT_GENERAL = 396402.80     # actualizar si el fixture cambia
+        # Valores del fixture COMPRAS.
+        # Tras el fix base_import, base_general solo incluye compras
+        # nacionales; las importaciones van a base_import_16.
+        # base_general    = sum(col23 filas 8-17) — nacional
+        # vat_general     = sum(col24 filas 8-17) — nacional
+        # base_import_16  = col19 fila 13 (SENIAT/ADUANA)
+        # vat_import_16   = col20 fila 13
+        EXPECTED_BASE_GENERAL = 2077517.43  # actualizar si el fixture cambia
+        EXPECTED_VAT_GENERAL = 332402.80    # actualizar si el fixture cambia
+        EXPECTED_BASE_IMPORT = 400000.00    # actualizar si el fixture cambia
+        EXPECTED_VAT_IMPORT = 64000.00      # actualizar si el fixture cambia
 
         self.assertAlmostEqual(total_base, EXPECTED_BASE_GENERAL, places=2,
             msg=f"base_general: import={total_base} expected={EXPECTED_BASE_GENERAL}")
         self.assertAlmostEqual(total_vat, EXPECTED_VAT_GENERAL, places=2,
             msg=f"vat_general: import={total_vat} expected={EXPECTED_VAT_GENERAL}")
+        self.assertAlmostEqual(total_base_import, EXPECTED_BASE_IMPORT, places=2,
+            msg=f"base_import_16: import={total_base_import} expected={EXPECTED_BASE_IMPORT}")
+        self.assertAlmostEqual(total_vat_import, EXPECTED_VAT_IMPORT, places=2,
+            msg=f"vat_import_16: import={total_vat_import} expected={EXPECTED_VAT_IMPORT}")
 
     def test_import_real_fixture_sale_anulada_skipped(self):
         """Factura anulada VENTAS (fila 17, invoice 000139) NO está en vat.book.line."""

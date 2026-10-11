@@ -904,10 +904,17 @@ class ImportWizard(models.TransientModel):
             # Para VENTAS: contrib, non_contrib, not_subject, not_taxed
 
             if book_type == 'purchase':
-                # Línea para alícuota general (16%) + importación
-                if has_general or has_import:
+                # Línea para alícuota general (16%) nacional
+                if has_general:
                     line_data = row_data.copy()
                     line_data['_rate_type'] = 'general'
+                    line_data['_book_type'] = 'purchase'
+                    lines_to_create.append(line_data)
+
+                # Línea para importación 16%
+                if has_import:
+                    line_data = row_data.copy()
+                    line_data['_rate_type'] = 'import'
                     line_data['_book_type'] = 'purchase'
                     lines_to_create.append(line_data)
 
@@ -1058,7 +1065,9 @@ class ImportWizard(models.TransientModel):
     def _get_vat_book_operation_code(self, rate_type, book_type):
         """Mapea _rate_type → operation_code SENIAT."""
         if book_type == 'purchase':
-            if rate_type in ('general',):
+            if rate_type == 'import':
+                return '31'
+            elif rate_type == 'general':
                 return '33'
             elif rate_type == 'reduced':
                 return '333'
@@ -1076,13 +1085,15 @@ class ImportWizard(models.TransientModel):
 
         base_general = vat_general = base_reduced = vat_reduced = 0.0
         base_no_credit = base_not_subject = base_not_taxed = 0.0
+        base_import_16 = vat_import_16 = 0.0
 
         if book_type == 'purchase':
             if rate == 'general':
-                base_general = (data.get('base_general') or 0) + \
-                               (data.get('base_import_16') or 0)
-                vat_general = (data.get('vat_general') or 0) + \
-                              (data.get('vat_import_16') or 0)
+                base_general = data.get('base_general') or 0
+                vat_general = data.get('vat_general') or 0
+            elif rate == 'import':
+                base_import_16 = data.get('base_import_16') or 0
+                vat_import_16 = data.get('vat_import_16') or 0
             elif rate == 'reduced':
                 base_reduced = data.get('base_reduced') or 0
                 vat_reduced = data.get('vat_reduced') or 0
@@ -1107,11 +1118,14 @@ class ImportWizard(models.TransientModel):
         # Misma lógica para purchase y sale: 16% general, 8% reduced
         if base_general > 0 and not vat_general:
             vat_general = round(base_general * 0.16, 2)
+        if base_import_16 > 0 and not vat_import_16:
+            vat_import_16 = round(base_import_16 * 0.16, 2)
         if base_reduced > 0 and not vat_reduced:
             vat_reduced = round(base_reduced * 0.08, 2)
 
         total_with_vat = (base_general + vat_general + base_reduced + vat_reduced +
-                          base_no_credit + base_not_subject + base_not_taxed)
+                          base_no_credit + base_not_subject + base_not_taxed +
+                          base_import_16 + vat_import_16)
 
         return {
             'book_type': book_type,
@@ -1127,6 +1141,8 @@ class ImportWizard(models.TransientModel):
             'base_no_credit': base_no_credit,
             'base_not_subject': base_not_subject,
             'base_not_taxed': base_not_taxed,
+            'base_import_16': base_import_16,
+            'vat_import_16': vat_import_16,
             'retention_number': data.get('retention_number') or '',
             'retention_direction': retention_direction,
         }

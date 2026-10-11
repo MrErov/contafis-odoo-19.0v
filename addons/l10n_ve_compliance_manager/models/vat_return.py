@@ -147,6 +147,9 @@ class VatReturn(models.Model):
             elif line.book_type == 'purchase':
                 if op_code == '30':
                     self.item_30 += sign * (line.base_no_credit + line.base_not_subject + line.base_not_taxed)
+                elif op_code == '31':
+                    self.item_31 += sign * line.base_import_16
+                    self.item_32 += sign * line.vat_import_16
                 elif op_code == '33':
                     self.item_33 += sign * line.base_general
                     self.item_34 += sign * line.vat_general
