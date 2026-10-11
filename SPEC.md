@@ -24,15 +24,15 @@ para contadores en Venezuela. Multi-cliente (el contador gestiona varias empresa
    importación masiva desde Excel (obligaciones, documentos, clientes,
    retenciones) con validación en 3 niveles y upsert
 7. **[07-cartelera-excel.md](specs/07-cartelera-excel.md)** — Importación de la cartelera fiscal desde
-    Excel mensual (36 documentos, snapshot por cliente/mes)
+     Excel mensual (36 documentos, snapshot por cliente/mes)
 8. **[08-evidencias.md](specs/08-evidencias.md)** — Evidencia
    fotográfica de documentos de cartelera + transición
    automática de estado
 9. **[09-libro-compras-ventas.md](specs/09-libro-compras-ventas.md)**
-    — Libro de Compras/Ventas + Planilla IVA 99030
+     — Libro de Compras/Ventas + Planilla IVA 99030
 10. **[10-importacion-libro-compras-ventas.md](specs/10-importacion-libro-compras-ventas.md)**
-    — Importación de Libro de Compras/Ventas desde Excel (canal
-    alterno al Odoo-first)
+     — Importación de Libro de Compras/Ventas desde Excel (canal
+     alterno al Odoo-first)
 
 ## Modelos Principales (resumen)
 - `l10n.ve.compliance.client` — Cliente multi-empresa, score, status, alertas
@@ -113,6 +113,14 @@ para contadores en Venezuela. Multi-cliente (el contador gestiona varias empresa
 - ✅ Corrección de conceptos del PDF con nombres SENIAT literales
 - ✅ 107 tests pasando (96 + 11 nuevos)
 
+### Bug-Fix Base-Import (COMPLETADA)
+- ✅ Separación de base nacional vs importación en vat.book.line
+- ✅ Parser detecta importaciones como _rate_type='import'
+- ✅ Mapeo a op_code '31' (importación SENIAT)
+- ✅ action_load_from_book llena item_31/item_32
+- ✅ Fix derivado: item_35 suma solo bases
+- ✅ Commits: 5ef4224, 5a29e97
+
 ### DevOps.1: Pre-commit hooks + ruff config (COMPLETADA)
 - ✅ pyproject.toml con ruff (E/W/F/I/UP, line-length=120)
 - ✅ .pre-commit-config.yaml con 7 hooks (trailing-whitespace, end-of-file-fixer, check-yaml, check-xml, check-added-large-files, mixed-line-ending, ruff)
@@ -147,6 +155,8 @@ para contadores en Venezuela. Multi-cliente (el contador gestiona varias empresa
 - ⬜ Spec 11: Conciliación ISLR
 - ⬜ Migrar `_sql_constraints` a `models.Constraint` (Odoo 19 lo
   marcó deprecated, aparecen 2 warnings en logs)
+- ⬜ Warning cartelera_status_current_ids no searchable
+- ⬜ Fase backend: asientos contables + wizard factura física + source en líneas
 - ⬜ Fase H: E2E con Playwright (subida de Excel vía UI)
 - ⬜ Tests de integración con fixtures de cartelera y
   conciliación fiscal (ya en repo, sin tests)
